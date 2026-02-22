@@ -25,16 +25,25 @@ const Login = () => {
         e.preventDefault();
         setLoading(true);
         setError('');
-
+        console.log(formData);
+        
         try {
             const response = await authAPI.login(formData);
-            const { token, user, needsVerification, userId } = response.data;
-
+            const { success, message, token, user, needsVerification, userId, accountStatus } = response.data;
+            if (success === false) {
+                setError(message || 'Login failed');
+                setLoading(false);
+                return;
+            }
+            if (accountStatus === 'pending') {
+                setError('Your account is pending admin approval. You will be able to login once approved.');
+                setLoading(false);
+                return;
+            }
             if (needsVerification) {
                 navigate(`/verify-otp?userId=${userId}`);
                 return;
             }
-
             login(token, user);
             navigate('/dashboard');
         } catch (error) {

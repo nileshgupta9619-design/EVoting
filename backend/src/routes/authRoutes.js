@@ -5,6 +5,8 @@ import {
   login,
   getMe,
   resendOTP,
+  sendOTPviaSMS,
+  sendOTPDualChannel,
 } from "../controllers/authController.js";
 import {
   validateRegister,
@@ -18,6 +20,8 @@ const router = express.Router();
 router.post("/register", validateRegister, handleValidationErrors, register);
 router.post("/verify-otp", verifyOTP);
 router.post("/resend-otp", resendOTP);
+router.post("/send-otp-sms", sendOTPviaSMS);
+router.post("/send-otp-dual", sendOTPDualChannel);
 router.post("/login", validateLogin, handleValidationErrors, login);
 router.get("/me", protect, getMe);
 

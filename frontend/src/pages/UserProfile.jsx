@@ -15,6 +15,7 @@ const UserProfile = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
+    const [accountStatus, setAccountStatus] = useState(''); // New state for account status
 
     if (!token) {
         navigate('/login');
@@ -26,13 +27,14 @@ const UserProfile = () => {
         
         const fetchUserData = async () => {
             try {
-                const response = await api.get('/user/profile');
+                const response = await api.get('/user/profile'); // Ensure this is the correct route
                 if (response.data?.user) {
                     setUserData(response.data.user);
                     console.log(response.data.user)
                     setFormData({
                         fullName: response.data.user.fullName || '',
                         phone: response.data.user.phone || '',
+                        accountStatus: response.data.user.accountStatus || '', // Handle account status
                     });
                 }
             } catch (error) {
@@ -158,6 +160,8 @@ const UserProfile = () => {
                                 <p className="font-semibold mb-3">
                                     {userData?.hasVoted ? '✓ Already Voted' : '✗ Not Voted Yet'}
                                 </p>
+                                   <p className="text-xs text-purple-300 mb-1">Account Status</p>
+                                   <p className="font-semibold mb-3">{userData?.accountStatus || 'N/A'}</p> {/* Display account status */}
                                 <p className="text-xs text-purple-300 mb-1">Member Since</p>
                                 <p className="font-semibold mb-3">
                                     {userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : '-'}
