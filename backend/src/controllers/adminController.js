@@ -165,6 +165,7 @@ export const createAdmin = async (req, res) => {
 // Admin login
 export const adminLogin = async (req, res) => {
   try {
+    console.log(req.body);
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -219,8 +220,8 @@ export const getAllUsers = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      length: users.length,
-      users,
+      count: users.length,
+      data: users,
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -232,14 +233,14 @@ export const getPendingRegistrations = async (req, res) => {
   try {
     const pendingUsers = await User.find({ accountStatus: "pending" })
       .select(
-        "fullName email phone governmentIdType governmentIdNumber governmentIdDocument isEmailVerified createdAt",
+        "fullName email phone governmentIdType governmentIdNumber govermentIdDocumentUrl isEmailVerified createdAt",
       )
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
       count: pendingUsers.length,
-      users: pendingUsers,
+      data: pendingUsers,
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -279,7 +280,7 @@ export const approveUserRegistration = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "User registration approved",
-      user,
+      data: user,
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -325,7 +326,7 @@ export const rejectUserRegistration = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "User registration rejected",
-      user,
+      data: user,
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -524,7 +525,7 @@ export const getAuditLogs = async (req, res) => {
         limit: parseInt(limit),
         pages: Math.ceil(total / parseInt(limit)),
       },
-      auditLogs,
+      data: auditLogs,
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

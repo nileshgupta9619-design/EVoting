@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../utils/api';
+import { userAPI } from '../utils/api';
 
 const UserProfile = () => {
     const navigate = useNavigate();
@@ -24,10 +24,10 @@ const UserProfile = () => {
 
     useEffect(() => {
         // Fetch fresh user data from backend
-        
+
         const fetchUserData = async () => {
             try {
-                const response = await api.get('/user/profile'); // Ensure this is the correct route
+                const response = await userAPI.getProfile(); // Ensure this is the correct route
                 if (response.data?.user) {
                     setUserData(response.data.user);
                     console.log(response.data.user)
@@ -71,7 +71,7 @@ const UserProfile = () => {
         }
 
         try {
-            const response = await api.put('/users/profile', {
+            const response = await userAPI.updateProfile({
                 fullName: formData.fullName,
                 phone: formData.phone,
             });
@@ -96,9 +96,7 @@ const UserProfile = () => {
         setError('');
 
         try {
-            await api.delete('/users/account', {
-                data: { password },
-            });
+            await userAPI.deleteAccount();
 
             alert('Account deleted successfully');
             logout();
@@ -160,8 +158,8 @@ const UserProfile = () => {
                                 <p className="font-semibold mb-3">
                                     {userData?.hasVoted ? '✓ Already Voted' : '✗ Not Voted Yet'}
                                 </p>
-                                   <p className="text-xs text-purple-300 mb-1">Account Status</p>
-                                   <p className="font-semibold mb-3">{userData?.accountStatus || 'N/A'}</p> {/* Display account status */}
+                                <p className="text-xs text-purple-300 mb-1">Account Status</p>
+                                <p className="font-semibold mb-3">{userData?.accountStatus || 'N/A'}</p> {/* Display account status */}
                                 <p className="text-xs text-purple-300 mb-1">Member Since</p>
                                 <p className="font-semibold mb-3">
                                     {userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : '-'}

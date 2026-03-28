@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { useEffect } from 'react';
+import { toast } from 'react-toastify';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -12,7 +14,12 @@ const Login = () => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-
+   useEffect(() => {
+       let id = localStorage.getItem('evoting_userId');
+        if (!id) {
+            setError("admin have to approve your account wait for it...")
+        }
+    }, []);
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
@@ -25,26 +32,40 @@ const Login = () => {
         e.preventDefault();
         setLoading(true);
         setError('');
-        console.log(formData);
-        
+        console.log("Login formData ",formData);
+
         try {
             const response = await authAPI.login(formData);
-            const { success, message, token, user, needsVerification, userId, accountStatus } = response.data;
+            console.log("res",response);
+            
+            const { success, message } = response.data;
+            const userDetail =response.data.data
+            // console.log(response.data.success);
+
+            // const { success, message, token, user, needsVerification, userId, accountStatus } = response.data;
+
             if (success === false) {
                 setError(message || 'Login failed');
                 setLoading(false);
                 return;
             }
-            if (accountStatus === 'pending') {
+            console.log("logging",userDetail,userDetail.user);
+            
+            if (userDetail.accountStatus === 'pending') {
                 setError('Your account is pending admin approval. You will be able to login once approved.');
                 setLoading(false);
                 return;
             }
-            if (needsVerification) {
-                navigate(`/verify-otp?userId=${userId}`);
-                return;
-            }
-            login(token, user);
+            /***************** TO DO ******************/
+            // if (needsVerification) {
+            //     navigate(`/verify-otp?userId=${userId}`);
+            //     return;
+            // }
+
+            console.log(userDetail.token,userDetail.user);
+            toast.success("Login Successfully")
+            login(userDetail.token,userDetail.user);
+
             navigate('/dashboard');
         } catch (error) {
             setError(error.response?.data?.message || 'Login failed');

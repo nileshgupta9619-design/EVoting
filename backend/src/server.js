@@ -31,6 +31,8 @@ const connectDB = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
+    
+registerUser();
     console.log("✓ MongoDB connected successfully");
   } catch (error) {
     console.error("✗ MongoDB connection error:", error.message);
@@ -103,5 +105,26 @@ process.on("uncaughtException", (err) => {
   console.error("✗ Uncaught Exception:", err);
   server.close(() => process.exit(1));
 });
+import bcryptjs from "bcryptjs";
+// Example register function
+async function registerUser() {
+  try {
+    const   password  = 'Password@123';
+    console.log(password);
+    
+    // Hash password
+    const hashedPassword = await bcryptjs.hash(password, 10);
 
+    // Save to DB (example)
+    const user = {
+      
+      password: hashedPassword,
+    };
+
+    console.log(user); // replace with DB save
+
+    
+  } catch (err) {
+  }
+}
 export default app;

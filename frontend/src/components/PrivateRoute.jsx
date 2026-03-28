@@ -1,15 +1,22 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Loading from './Loading';
 
 const PrivateRoute = ({ children }) => {
-    const { token, loading } = useAuth();
+    const { token, loading, user } = useAuth();
 
     if (loading) {
-        return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+        return <Loading fullScreen />;
     }
 
-    return token ? children : <Navigate to="/login" />;
+    // If no token, redirect to login
+    if (!token) {
+        return <Navigate to="/login" replace />;
+    }
+
+    // Route is protected, user is authenticated
+    return children;
 };
 
 export default PrivateRoute;

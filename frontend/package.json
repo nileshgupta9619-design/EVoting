@@ -12,10 +12,12 @@
     "@reduxjs/toolkit": "^2.11.2",
     "@tailwindcss/vite": "^4.1.18",
     "axios": "^1.5.0",
+    "firebase": "^12.9.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-redux": "^9.2.0",
-    "react-router-dom": "^6.16.0"
+    "react-router-dom": "^6.16.0",
+    "react-toastify": "^11.0.5"
   },
   "devDependencies": {
     "@types/react": "^18.2.37",

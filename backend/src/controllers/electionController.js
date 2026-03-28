@@ -32,9 +32,9 @@ export const createElection = asyncHandler(async (req, res, next) => {
     endDate: endDate ? new Date(endDate) : null,
     createdBy: adminId,
   });
-
+  
   await AuditLog.create({
-    userId: adminId,
+    adminId: adminId,
     action: "create_election",
     targetType: "Election",
     targetId: election._id,
@@ -59,23 +59,26 @@ export const getAllElections = asyncHandler(async (req, res, next) => {
   }
 
   const now = new Date();
-
-  const elections = await Election.find({
-    isActive: true,
-    $or: [
-      {
-        startDate: { $lte: now },
-        endDate: { $gte: now },
-      },
-      {
-        startDate: null,
-        endDate: null,
-        isActive: true,
-      },
-    ],
-  })
-    .populate("createdBy", "fullName email")
-    .sort({ createdAt: -1 });
+  const elections = await Election.find({}).populate(
+    "createdBy",
+    "fullName email",
+  ).sort({ createdAt: -1 });
+  // const elections = await Election.find({
+  //   isActive: true,
+  //   $or: [
+  //     {
+  //       startDate: { $lte: now },
+  //       endDate: { $gte: now },
+  //     },
+  //     {
+  //       startDate: null,
+  //       endDate: null,
+  //       isActive: true,
+  //     },
+  //   ],
+  // })
+  //   .populate("createdBy", "fullName email")
+  //   .sort({ createdAt: -1 });
 
   res.status(200).json({
     success: true,

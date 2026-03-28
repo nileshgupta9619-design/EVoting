@@ -79,7 +79,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Government ID number is required"],
     },
-    governmentIdDocument: {
+    govermentIdDocumentUrl: {
       type: String,
       required: [true, "Government ID document is required"],
     },

@@ -3,12 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { clearAdmin } from '../store/adminSlice';
 import { api, votingAPI, candidateProfileAPI, electionAPI, adminAPI } from '../utils/api';
-// C: \Users\yg497\OneDrive\Desktop\EVOTING\frontend\src\pages\AdminDashboard.jsx
+import AdminHeader from '../components/AdminHeader';
+import RegistrationTab from '../components/RegistrationTab';
+import CandidateTab from '../components/CandidateTab';
+import MonitoringTab from '../components/MonitoringTab';
+import ReportsTab from '../components/ReportTab';
+import RequestTab from '../components/RequestTab';
+import ElectionsTab from '../components/ElectionsTab';
+import AuditLog from '../../../backend/src/models/AuditLog';
+import AuditLogTab from '../components/AuditLogTab';
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
-    const { admin, token } = useSelector((state) => state.admin);
-
+    // const { admin, token } = useSelector((state) => state.admin);
+    const [admin, setAdmin] = useState({
+        email:"admin123@gmail.com"
+         
+    })
     const [activeTab, setActiveTab] = useState('overview');
     const [candidates, setCandidates] = useState([]);
     const [pendingProfiles, setPendingProfiles] = useState([]);
@@ -192,35 +203,7 @@ const AdminDashboard = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
             {/* Header */}
-            <header className="bg-slate-800/80 backdrop-blur-xl border-b border-purple-500/20 sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-white">E-Voting Admin</h1>
-                            <p className="text-purple-300 text-xs">Control Panel</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center space-x-6">
-                        <div className="hidden sm:block text-right">
-                            <p className="text-white font-medium">{admin?.email}</p>
-                            <p className="text-purple-300 text-xs">Administrator</p>
-                        </div>
-                        <button
-                            onClick={handleLogout}
-                            className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg transition border border-red-500/50"
-                        >
-                            Logout
-                        </button>
-                    </div>
-                </div>
-            </header>
-
+           <AdminHeader admin={admin} handleLogout={handleLogout}/>
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-6 py-8">
                 {/* Stats Cards */}
@@ -281,23 +264,6 @@ const AdminDashboard = () => {
                                     <div className="space-y-6">
                                         <h2 className="text-2xl font-bold text-white">Dashboard Overview</h2>
                                         <div className="grid md:grid-cols-2 gap-6">
-                                            {/* <div className="bg-slate-600/50 p-6 rounded-lg border border-purple-500/20">
-                                                <h3 className="text-lg font-semibold text-white mb-4">System Status</h3>
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-purple-300">Database</span>
-                                                        <span className="text-green-400 font-semibold">✓ Connected</span>
-                                                    </div>
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-purple-300">Email Service</span>
-                                                        <span className="text-green-400 font-semibold">✓ Active</span>
-                                                    </div>
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-purple-300">API Server</span>
-                                                        <span className="text-green-400 font-semibold">✓ Running</span>
-                                                    </div>
-                                                </div>
-                                            </div> */}
                                             <div className="bg-slate-600/50 p-6 rounded-lg border border-purple-500/20">
                                                 <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
                                                 <div className="space-y-2">
@@ -321,149 +287,17 @@ const AdminDashboard = () => {
 
                                 {/* Pending Registrations Tab */}
                                 {activeTab === 'registrations' && (
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-white mb-6">Pending User Registrations</h2>
-                                        {pendingRegistrations.length === 0 ? (
-                                            <div className="text-center py-12">
-                                                <p className="text-slate-300 text-lg">No pending registrations</p>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-4">
-                                                {pendingRegistrations.map((user) => (
-                                                    <div key={user._id} className="bg-slate-600/50 border border-purple-500/20 rounded-lg overflow-hidden">
-                                                        <div className="p-6">
-                                                            <div className="grid md:grid-cols-2 gap-6">
-                                                                {/* User Info */}
-                                                                <div>
-                                                                    <h3 className="text-lg font-semibold text-white mb-3">User Information</h3>
-                                                                    <div className="space-y-2 text-sm">
-                                                                        <div>
-                                                                            <span className="text-purple-300">Name:</span>
-                                                                            <span className="ml-2 text-white">{user.fullName}</span>
-                                                                        </div>
-                                                                        <div>
-                                                                            <span className="text-purple-300">Email:</span>
-                                                                            <span className="ml-2 text-white">{user.email}</span>
-                                                                        </div>
-                                                                        <div>
-                                                                            <span className="text-purple-300">Phone:</span>
-                                                                            <span className="ml-2 text-white">{user.phone}</span>
-                                                                        </div>
-                                                                        <div>
-                                                                            <span className="text-purple-300">Email Verified:</span>
-                                                                            <span className={`ml-2 font-semibold ${user.isEmailVerified ? 'text-green-400' : 'text-red-400'}`}>
-                                                                                {user.isEmailVerified ? '✓ Yes' : '✗ No'}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Government ID Info */}
-                                                                <div>
-                                                                    <h3 className="text-lg font-semibold text-white mb-3">Government ID</h3>
-                                                                    <div className="space-y-2 text-sm">
-                                                                        <div>
-                                                                            <span className="text-purple-300">ID Type:</span>
-                                                                            <span className="ml-2 text-white capitalize">{user.governmentIdType}</span>
-                                                                        </div>
-                                                                        <div>
-                                                                            <span className="text-purple-300">ID Number:</span>
-                                                                            <span className="ml-2 text-white">{user.governmentIdNumber}</span>
-                                                                        </div>
-                                                                        <div className="mt-4">
-                                                                            <p className="text-purple-300 text-xs mb-2">ID Document:</p>
-                                                                            {user.governmentIdDocument && (
-                                                                                <div className="border border-purple-500/30 rounded p-2 bg-slate-700/40">
-                                                                                    {user.governmentIdDocument.startsWith('data:') ? (
-                                                                                        <img
-                                                                                            src={user.governmentIdDocument}
-                                                                                            alt="ID Document"
-                                                                                            className="w-full h-32 object-cover rounded"
-                                                                                        />
-                                                                                    ) : (
-                                                                                        <a href={user.governmentIdDocument} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
-                                                                                            View Document
-                                                                                        </a>
-                                                                                    )}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Action Buttons */}
-                                                            <div className="mt-6 flex gap-3 pt-4 border-t border-purple-500/20">
-                                                                <button
-                                                                    onClick={() => approveRegistration(user._id)}
-                                                                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-lg transition"
-                                                                >
-                                                                    ✓ Approve Registration
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => rejectRegistration(user._id)}
-                                                                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-lg transition"
-                                                                >
-                                                                    ✗ Reject Registration
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
+                                    <RegistrationTab pendingRegistrations={pendingRegistrations}/>
                                 )}
 
                                 {/* Candidates Tab */}
                                 {activeTab === 'candidates' && (
-                                    <div>
-                                        <div className="flex justify-between items-center mb-6">
-                                            <h2 className="text-2xl font-bold text-white">Manage Candidates</h2>
-                                            <button className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition">
-                                                + Add Candidate
-                                            </button>
-                                        </div>
-                                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            {candidates.map((candidate) => (
-                                                <div key={candidate._id} className="bg-slate-600/50 p-6 rounded-lg border border-purple-500/20 hover:border-purple-500/40 transition">
-                                                    <h3 className="text-lg font-semibold text-white mb-2">{candidate.name}</h3>
-                                                    <p className="text-purple-300 text-sm mb-4">{candidate.party}</p>
-                                                    <p className="text-slate-300 text-xs mb-6 line-clamp-3">{candidate.description}</p>
-                                                    <div className="flex gap-2">
-                                                        <button className="flex-1 px-3 py-2 bg-blue-600/50 hover:bg-blue-600/70 text-blue-200 rounded text-sm transition">
-                                                            Edit
-                                                        </button>
-                                                        <button className="flex-1 px-3 py-2 bg-red-600/50 hover:bg-red-600/70 text-red-200 rounded text-sm transition">
-                                                            Delete
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                                    <CandidateTab candidates={candidates}/>
                                 )}
 
                                 {/* Requests Tab */}
                                 {activeTab === 'requests' && (
-                                    <div>
-                                        <div className="flex justify-between items-center mb-6">
-                                            <h2 className="text-2xl font-bold text-white">Pending Candidate Requests</h2>
-                                        </div>
-                                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            {pendingProfiles.map((p) => (
-                                                <div key={p._id} className="bg-slate-600/50 p-6 rounded-lg border border-purple-500/20">
-                                                    <h3 className="text-lg font-semibold text-white mb-2">{p.candidateName}</h3>
-                                                    <p className="text-purple-300 text-sm mb-2">Party: {p.party}</p>
-                                                    <p className="text-slate-300 text-xs mb-4">Submitted by: {p.userId?.fullName} ({p.userId?.email})</p>
-                                                    <div className="flex gap-2">
-                                                        <button onClick={() => approveProfile(p._id)} className="flex-1 px-3 py-2 bg-green-600/50 hover:bg-green-600/70 text-green-200 rounded text-sm transition">Approve</button>
-                                                        <button onClick={() => rejectProfile(p._id)} className="flex-1 px-3 py-2 bg-red-600/50 hover:bg-red-600/70 text-red-200 rounded text-sm transition">Reject</button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                                    <RequestTab pendingProfiles={pendingProfiles}/>
                                 )}
 
                                 {/* Users Tab */}
@@ -542,49 +376,12 @@ const AdminDashboard = () => {
 
                                 {/* Elections Tab */}
                                 {activeTab === 'elections' && (
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-white mb-6">Elections</h2>
-                                        <div className="grid md:grid-cols-2 gap-4">
-                                            {elections.map((el) => (
-                                                <div key={el._id} className="bg-slate-600/50 p-4 rounded-lg border border-purple-500/20">
-                                                    <div className="flex justify-between items-center">
-                                                        <div>
-                                                            <h3 className="text-white font-semibold">{el.title}</h3>
-                                                            <p className="text-purple-300 text-sm">{el.description}</p>
-                                                        </div>
-                                                        <div className="space-x-2">
-                                                            <span className={`px-3 py-1 rounded-full text-sm ${el.isActive ? 'bg-green-600/30 text-green-200' : 'bg-red-600/30 text-red-200'}`}>{el.isActive ? 'Active' : 'Inactive'}</span>
-                                                            {el.isActive ? (
-                                                                <button onClick={() => stopElection(el._id)} className="px-4 py-2 bg-red-600/40 text-red-200 rounded">Stop</button>
-                                                            ) : (
-                                                                <button onClick={() => startElection(el._id)} className="px-4 py-2 bg-green-600/40 text-green-200 rounded">Start</button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                                   <ElectionsTab elections={elections}/>
                                 )}
 
                                 {/* Logs Tab */}
                                 {activeTab === 'logs' && (
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-white mb-6">Audit Logs</h2>
-                                        <div className="space-y-3">
-                                            {logs.map((log) => (
-                                                <div key={log._id} className="bg-slate-600/50 p-3 rounded border border-purple-500/10">
-                                                    <div className="flex justify-between">
-                                                        <div>
-                                                            <p className="text-white font-medium">{log.action}</p>
-                                                            <p className="text-purple-300 text-sm">By: {log.adminId?.fullName} ({log.adminId?.email})</p>
-                                                        </div>
-                                                        <div className="text-sm text-slate-300">{new Date(log.createdAt).toLocaleString()}</div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                                   <AuditLogTab logs={logs}/>
                                 )}
 
                                 {/* Reports Tab */}
@@ -597,10 +394,7 @@ const AdminDashboard = () => {
 
                                 {/* Monitoring Tab */}
                                 {activeTab === 'monitoring' && (
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-white mb-6">Real-Time Monitoring</h2>
-                                        <MonitoringTab elections={elections} />
-                                    </div>
+                                    <MonitoringTab elections={elections} />
                                 )}
                             </>
                         )}
@@ -610,262 +404,4 @@ const AdminDashboard = () => {
         </div>
     );
 };
-
-// Reports Tab Component
-const ReportsTab = ({ elections }) => {
-    const [selectedElection, setSelectedElection] = useState(null);
-    const [reportData, setReportData] = useState(null);
-    const [systemStats, setSystemStats] = useState(null);
-    const [loading, setLoading] = useState(false);
-
-    const fetchElectionReport = async (electionId) => {
-        setLoading(true);
-        try {
-            const response = await adminAPI.getElectionReports(electionId);
-            setReportData(response.data);
-            setSelectedElection(electionId);
-        } catch (error) {
-            console.error('Failed to load report:', error);
-            alert('Failed to load report');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchSystemStats = async () => {
-        setLoading(true);
-        try {
-            const response = await adminAPI.getSystemStatistics();
-            setSystemStats(response.data.statistics);
-            setReportData(null);
-            setSelectedElection(null);
-        } catch (error) {
-            console.error('Failed to load system stats:', error);
-            alert('Failed to load statistics');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    if (loading) return <p className="text-slate-300">Loading...</p>;
-
-    return (
-        <div className="space-y-6">
-            <div className="bg-slate-600/50 p-4 rounded-lg border border-purple-500/20">
-                <h3 className="text-white font-semibold mb-3">Select Report Type</h3>
-                <div className="flex gap-2 flex-wrap">
-                    <button
-                        onClick={fetchSystemStats}
-                        className="px-4 py-2 bg-blue-600/40 hover:bg-blue-600/60 text-blue-200 rounded transition"
-                    >
-                        System Statistics
-                    </button>
-                    {elections.map((el) => (
-                        <button
-                            key={el._id}
-                            onClick={() => fetchElectionReport(el._id)}
-                            className="px-4 py-2 bg-purple-600/40 hover:bg-purple-600/60 text-purple-200 rounded transition"
-                        >
-                            {el.name} Report
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {systemStats && (
-                <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white">System-Wide Statistics</h3>
-                    <div className="grid md:grid-cols-2 gap-4">
-                        <div className="bg-slate-600/50 p-4 rounded border border-purple-500/20">
-                            <p className="text-purple-300 mb-2">Total Users</p>
-                            <p className="text-3xl font-bold text-white">{systemStats.users?.total || 0}</p>
-                        </div>
-                        <div className="bg-slate-600/50 p-4 rounded border border-purple-500/20">
-                            <p className="text-purple-300 mb-2">Approved Users</p>
-                            <p className="text-3xl font-bold text-green-400">{systemStats.users?.approved || 0}</p>
-                        </div>
-                        <div className="bg-slate-600/50 p-4 rounded border border-purple-500/20">
-                            <p className="text-purple-300 mb-2">Active Elections</p>
-                            <p className="text-3xl font-bold text-orange-400">{systemStats.elections?.active || 0}</p>
-                        </div>
-                        <div className="bg-slate-600/50 p-4 rounded border border-purple-500/20">
-                            <p className="text-purple-300 mb-2">Total Audit Records</p>
-                            <p className="text-3xl font-bold text-blue-400">{systemStats.auditLog?.totalRecords || 0}</p>
-                        </div>
-                    </div>
-                    <div className="bg-slate-600/50 p-4 rounded border border-purple-500/20">
-                        <h4 className="text-white font-semibold mb-3">Registration Status</h4>
-                        <div className="space-y-2">
-                            <div className="flex justify-between">
-                                <span className="text-purple-300">Pending</span>
-                                <span className="text-yellow-400 font-semibold">{systemStats.registrations?.pending || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-purple-300">Approved</span>
-                                <span className="text-green-400 font-semibold">{systemStats.registrations?.approved || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-purple-300">Rejected</span>
-                                <span className="text-red-400 font-semibold">{systemStats.registrations?.rejected || 0}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {reportData && (
-                <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white">Election: {reportData.election?.name}</h3>
-                    <div className="grid md:grid-cols-2 gap-4">
-                        <div className="bg-slate-600/50 p-4 rounded border border-purple-500/20">
-                            <p className="text-purple-300 mb-2">Total Votes Cast</p>
-                            <p className="text-3xl font-bold text-white">{reportData.voteStatistics?.totalVotes || 0}</p>
-                        </div>
-                        <div className="bg-slate-600/50 p-4 rounded border border-purple-500/20">
-                            <p className="text-purple-300 mb-2">Total Candidates</p>
-                            <p className="text-3xl font-bold text-white">{reportData.voteStatistics?.candidatesCount || 0}</p>
-                        </div>
-                    </div>
-                    <div className="bg-slate-600/50 p-4 rounded border border-purple-500/20">
-                        <h4 className="text-white font-semibold mb-3">Candidate Results</h4>
-                        <div className="space-y-2">
-                            {reportData.voteStatistics?.candidates.map((cand, idx) => (
-                                <div key={idx} className="flex justify-between items-center">
-                                    <div>
-                                        <p className="text-white font-medium">{cand.name}</p>
-                                        <p className="text-slate-400 text-sm">{cand.party}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-white font-bold">{cand.voteCount}</p>
-                                        <p className="text-purple-300 text-sm">{cand.percentage}%</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// Monitoring Tab Component
-const MonitoringTab = ({ elections }) => {
-    const [selectedElection, setSelectedElection] = useState(null);
-    const [monitoringData, setMonitoringData] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [autoRefresh, setAutoRefresh] = useState(true);
-
-    const fetchMonitoringData = async (electionId) => {
-        setLoading(true);
-        try {
-            const response = await adminAPI.getElectionActivityMonitoring(electionId);
-            setMonitoringData(response.data);
-            setSelectedElection(electionId);
-        } catch (error) {
-            console.error('Failed to load monitoring data:', error);
-            alert('Failed to load monitoring data');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (!autoRefresh || !selectedElection) return;
-        const interval = setInterval(() => {
-            fetchMonitoringData(selectedElection);
-        }, 5000); // Refresh every 5 seconds
-
-        return () => clearInterval(interval);
-    }, [autoRefresh, selectedElection]);
-
-    if (loading && !monitoringData) return <p className="text-slate-300">Loading...</p>;
-
-    return (
-        <div className="space-y-6">
-            <div className="bg-slate-600/50 p-4 rounded-lg border border-purple-500/20">
-                <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-white font-semibold">Select Election to Monitor</h3>
-                    <label className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            checked={autoRefresh}
-                            onChange={(e) => setAutoRefresh(e.target.checked)}
-                            className="rounded"
-                        />
-                        <span className="text-purple-300 text-sm">Auto Refresh (5s)</span>
-                    </label>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                    {elections.map((el) => (
-                        <button
-                            key={el._id}
-                            onClick={() => fetchMonitoringData(el._id)}
-                            className={`px-4 py-2 rounded transition ${selectedElection === el._id
-                                    ? 'bg-green-600/60 text-green-200'
-                                    : 'bg-slate-700/40 hover:bg-slate-700/60 text-slate-300'
-                                }`}
-                        >
-                            {el.name}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {monitoringData && (
-                <div className="space-y-4">
-                    <div className="grid md:grid-cols-3 gap-4">
-                        <div className="bg-slate-600/50 p-4 rounded border border-purple-500/20">
-                            <p className="text-purple-300 mb-2">Total Votes (Live)</p>
-                            <p className="text-3xl font-bold text-white">{monitoringData.activity?.totalVotes || 0}</p>
-                        </div>
-                        <div className="bg-slate-600/50 p-4 rounded border border-purple-500/20">
-                            <p className="text-purple-300 mb-2">Pending Registrations</p>
-                            <p className="text-3xl font-bold text-yellow-400">{monitoringData.registrationStatus?.pending || 0}</p>
-                        </div>
-                        <div className="bg-slate-600/50 p-4 rounded border border-purple-500/20">
-                            <p className="text-purple-300 mb-2">Approved Users</p>
-                            <p className="text-3xl font-bold text-green-400">{monitoringData.registrationStatus?.approved || 0}</p>
-                        </div>
-                    </div>
-
-                    <div className="bg-slate-600/50 p-4 rounded border border-purple-500/20">
-                        <h4 className="text-white font-semibold mb-3">Top Candidates</h4>
-                        <div className="space-y-2">
-                            {monitoringData.activity?.topCandidates?.map((cand, idx) => (
-                                <div key={idx} className="flex justify-between items-center">
-                                    <div>
-                                        <p className="text-white font-medium">#{idx + 1} {cand.name}</p>
-                                        <p className="text-slate-400 text-sm">{cand.party}</p>
-                                    </div>
-                                    <p className="text-white font-bold text-lg">{cand.voteCount}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="bg-slate-600/50 p-4 rounded border border-purple-500/20">
-                        <h4 className="text-white font-semibold mb-3">Recent Votes</h4>
-                        <div className="space-y-1 max-h-48 overflow-y-auto">
-                            {monitoringData.activity?.recentVotes?.map((vote, idx) => (
-                                <div key={idx} className="text-sm text-slate-300">
-                                    <span className="font-mono text-purple-300">{vote.receiptCode}</span>
-                                    <span className="ml-2 text-slate-500">
-                                        {new Date(vote.votedAt).toLocaleTimeString()}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <p className="text-slate-400 text-sm text-right">
-                        Last updated: {new Date(monitoringData.lastUpdated).toLocaleTimeString()}
-                        {autoRefresh && ' (Auto-refreshing)'}
-                    </p>
-                </div>
-            )}
-        </div>
-    );
-};
-
 export default AdminDashboard;

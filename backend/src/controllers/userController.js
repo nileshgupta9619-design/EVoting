@@ -141,6 +141,8 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
  * @param {string} confirmPassword - Password confirmation
  */
 export const resetPassword = asyncHandler(async (req, res, next) => {
+  console.log("req.body",req.body);
+  
   const { userId, otp, newPassword, confirmPassword } = req.body;
 
   // 1. Validate inputs
@@ -196,13 +198,13 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
   await user.save();
 
   // 9. Log action
-  await AuditLog.create({
-    userId: user._id,
-    action: "password_reset_completed",
-    targetType: "User",
-    targetId: user._id,
-    details: { email: user.email },
-  });
+  // await AuditLog.create({
+  //   userId: user._id,
+  //   action: "password_reset_completed",
+  //   targetType: "User",
+  //   targetId: user._id,
+  //   details: { email: user.email },
+  // });
 
   // 10. Consistent response
   res.status(200).json({
@@ -248,13 +250,13 @@ export const updateProfile = asyncHandler(async (req, res, next) => {
   }
 
   // 4. Log action
-  await AuditLog.create({
-    userId: user._id,
-    action: "profile_updated",
-    targetType: "User",
-    targetId: user._id,
-    details: { updatedFields: Object.keys(updateData) },
-  });
+  // await AuditLog.create({
+  //   userId: user._id,
+  //   action: "profile_updated",
+  //   targetType: "User",
+  //   targetId: user._id,
+  //   details: { updatedFields: Object.keys(updateData) },
+  // });
 
   // 5. Consistent response
   res.status(200).json({

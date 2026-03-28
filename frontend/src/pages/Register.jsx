@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authAPI } from '../utils/api';
+import { toast } from 'react-toastify';
 
 const Register = () => {
     const navigate = useNavigate();
@@ -12,11 +13,13 @@ const Register = () => {
         password: '',
         governmentIdType: 'aadhar',
         governmentIdNumber: '',
-        governmentIdDocument: '',
+        govermentIdDocumentUrl: 'https://res.cloudinary.com/df68ov6jj/image/upload/v1772033983/ocxlttvdqmfug1zpaoqf.png',
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [idDocumentPreview, setIdDocumentPreview] = useState('');
+    const [showPreview, setShowPreview] = useState(false);
+    const [uploading, setUploading] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -56,51 +59,61 @@ const Register = () => {
         }));
     };
 
-    const handleFileChange = (e) => {
+    const handleFileChange = async (e) => {
         const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const base64 = event.target.result;
+        if (!file) return;
+        setUploading(true);
+        setError("");
+        const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+        const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+        const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`;
+        try {
+            const formDataCloud = new FormData();
+            formDataCloud.append("file", file);
+            formDataCloud.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+            const response = await fetch(CLOUDINARY_URL, {
+                method: "POST",
+                body: formDataCloud,
+            });
+            const data = await response.json();
+            if (data.secure_url) {
                 setFormData((prev) => ({
                     ...prev,
-                    governmentIdDocument: base64,
+                    govermentIdDocumentUrl: data.secure_url,
                 }));
-                setIdDocumentPreview(base64);
-            };
-            reader.readAsDataURL(file);
+                setIdDocumentPreview(data.secure_url);
+                toast.success("document upload successfully");
+            } else {
+                setError("Failed to upload document. Please try again.");
+            }
+        } catch (err) {
+            setError("Error uploading document. Please try again.");
+        } finally {
+            setUploading(false);
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setError('');
+        setError("");
 
-        // Validate formif (formData.governmentIdType === "aadhar") {
         const digitsOnly = formData.governmentIdNumber.replace(/-/g, "");
-
-        if (digitsOnly.length !== 12) {
+        if (formData.governmentIdType === "aadhar" && digitsOnly.length !== 12) {
             setAadharError("Enter valid Aadhar number");
             setLoading(false);
             return;
         }
-
-        if (!formData.governmentIdDocument) {
-            setError('Please upload your government ID document');
+        if (!formData.govermentIdDocumentUrl) {
+            setError("Please upload your government ID document");
             setLoading(false);
             return;
         }
-
         try {
             const response = await authAPI.register(formData);
             const userId = response.data?.data?.userId;
-            const accountStatus = response.data?.data?.accountStatus;
-            if (accountStatus === 'pending') {
-                setError('Your account is pending admin approval. You will be able to login once approved.');
-                setLoading(false);
-                return;
-            }
+
             if (!userId) {
                 setError('Registration failed: No userId returned');
                 setLoading(false);
@@ -116,166 +129,166 @@ const Register = () => {
     };
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-            <div className="absolute top-0 left-0 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
-            <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
+        <>
+            <div className="min-h-screen bg-linear-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+                <div className="absolute top-0 left-0 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
+                <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
 
-            <div className="relative w-full max-w-2xl">
-                <div className="bg-slate-800/90 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-purple-500/20">
-                    <div className="text-center mb-6">
-                        <h2 className="text-3xl font-bold text-white mb-2">Create your account</h2>
-                        <p className="text-purple-300 text-sm">Register to participate in secure online voting</p>
-                    </div>
-
-                    {error && (
-                        <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/40 text-red-200 text-sm">
-                            {error}
-                        </div>
-                    )}
-
-                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Full Name */}
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-purple-200 mb-1">Full Name</label>
-                            <input
-                                type="text"
-                                name="fullName"
-                                value={formData.fullName}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-4 py-3 rounded-lg bg-slate-700/60 border border-purple-500/30 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder="Enter your full name"
-                            />
+                <div className="relative w-full max-w-2xl">
+                    <div className="bg-slate-800/90 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-purple-500/20">
+                        <div className="text-center mb-6">
+                            <h2 className="text-3xl font-bold text-white mb-2">Create your account</h2>
+                            <p className="text-purple-300 text-sm">Register to participate in secure online voting</p>
                         </div>
 
-                        {/* Email */}
-                        <div>
-                            <label className="block text-sm font-medium text-purple-200 mb-1">Email</label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-4 py-3 rounded-lg bg-slate-700/60 border border-purple-500/30 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder="your.email@example.com"
-                            />
-                        </div>
-
-                        {/* Phone */}
-                        <div>
-                            <label className="block text-sm font-medium text-purple-200 mb-1">Phone</label>
-                            <input
-                                type="tel"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-4 py-3 rounded-lg bg-slate-700/60 border border-purple-500/30 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder="10-digit phone number"
-                            />
-                        </div>
-
-                        {/* Password */}
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-purple-200 mb-1">Password</label>
-                            <input
-                                type="password"
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-4 py-3 rounded-lg bg-slate-700/60 border border-purple-500/30 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder="Minimum 6 characters"
-                            />
-                        </div>
-
-                        {/* Government ID Type */}
-                        <div>
-                            <label className="block text-sm font-medium text-purple-200 mb-1">Government ID Type</label>
-                            <select
-                                name="governmentIdType"
-                                value={formData.governmentIdType}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-4 py-3 rounded-lg bg-slate-700/60 border border-purple-500/30 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            >
-                                <option value="aadhar">Aadhar Card</option>
-                                <option value="pan">PAN Card</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-
-                        {/* Government ID Number */}
-                        <div>
-                            <label className="block text-sm font-medium text-purple-200 mb-1">
-                                {formData.governmentIdType === 'aadhar' ? 'Aadhar Number' : 'ID Number'}
-                            </label>
-                            <input
-                                type="text"
-                                name="governmentIdNumber"
-                                value={formData.governmentIdNumber}
-                                minLength={14}
-                                maxLength={14}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-4 py-3 rounded-lg bg-slate-700/60 border border-purple-500/30 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder={formData.governmentIdType === 'aadhar' ? 'XXXX XXXX XXXX' : 'ID number'}
-                            />
-                        </div>
-                        {aadharError && (
-                            <p className="text-red-400 text-xs mt-1">{aadharError}</p>
-                        )}
-
-                        {/* Government ID Document Upload */}
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-purple-200 mb-1">Upload Government ID Document</label>
-                            <input
-                                type="file"
-                                accept="image/*,.pdf"
-                                onChange={handleFileChange}
-                                required
-                                className="w-full px-4 py-3 rounded-lg bg-slate-700/60 border border-purple-500/30 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            />
-                            <p className="text-xs text-slate-400 mt-1">Supported formats: JPG, PNG, PDF (Max 5MB)</p>
-                        </div>
-
-                        {/* ID Document Preview */}
-                        {idDocumentPreview && (
-                            <div className="md:col-span-2">
-                                <p className="text-sm font-medium text-purple-200 mb-2">Document Preview</p>
-                                <div className="rounded-lg overflow-hidden border border-purple-500/30 bg-slate-700/40">
-                                    <img
-                                        src={idDocumentPreview}
-                                        alt="ID Document"
-                                        className="w-full h-48 object-cover"
-                                    />
-                                </div>
+                        {error && (
+                            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/40 text-red-200 text-sm">
+                                {error}
                             </div>
                         )}
 
-                        {/* Submit Button */}
-                        <div className="md:col-span-2 mt-2">
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full py-3 rounded-lg bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold shadow-lg shadow-purple-500/30 transition disabled:opacity-60"
-                            >
-                                {loading ? 'Registering...' : 'Register'}
-                            </button>
-                        </div>
-                    </form>
+                        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Full Name */}
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-purple-200 mb-1">Full Name</label>
+                                <input
+                                    type="text"
+                                    name="fullName"
+                                    value={formData.fullName}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full px-4 py-3 rounded-lg bg-slate-700/60 border border-purple-500/30 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="Enter your full name"
+                                />
+                            </div>
 
-                    <p className="mt-4 text-center text-slate-300 text-sm">
-                        Already have an account?{' '}
-                        <Link to="/login" className="text-purple-300 hover:text-purple-100 font-semibold">
-                            Login
-                        </Link>
-                    </p>
+                            {/* Email */}
+                            <div>
+                                <label className="block text-sm font-medium text-purple-200 mb-1">Email</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full px-4 py-3 rounded-lg bg-slate-700/60 border border-purple-500/30 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="your.email@example.com"
+                                />
+                            </div>
+
+                            {/* Phone */}
+                            <div>
+                                <label className="block text-sm font-medium text-purple-200 mb-1">Phone</label>
+                                <input
+                                    type="tel"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full px-4 py-3 rounded-lg bg-slate-700/60 border border-purple-500/30 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="10-digit phone number"
+                                />
+                            </div>
+
+                            {/* Password */}
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-purple-200 mb-1">Password</label>
+                                <input
+                                    type="password"
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full px-4 py-3 rounded-lg bg-slate-700/60 border border-purple-500/30 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="Minimum 6 characters"
+                                />
+                            </div>
+
+                            {/* Government ID Type */}
+                            <div>
+                                <label className="block text-sm font-medium text-purple-200 mb-1">Government ID Type</label>
+                                <select
+                                    name="governmentIdType"
+                                    value={formData.governmentIdType}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full px-4 py-3 rounded-lg bg-slate-700/60 border border-purple-500/30 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                >
+                                    <option value="aadhar">Aadhar Card</option>
+                                    <option value="pan">PAN Card</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+
+                            {/* Government ID Number */}
+                            <div>
+                                <label className="block text-sm font-medium text-purple-200 mb-1">
+                                    {formData.governmentIdType === 'aadhar' ? 'Aadhar Number' : 'ID Number'}
+                                </label>
+                                <input
+                                    type="text"
+                                    name="governmentIdNumber"
+                                    value={formData.governmentIdNumber}
+                                    minLength={14}
+                                    maxLength={14}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full px-4 py-3 rounded-lg bg-slate-700/60 border border-purple-500/30 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder={formData.governmentIdType === 'aadhar' ? 'XXXX XXXX XXXX' : 'ID number'}
+                                />
+                            </div>
+                            {aadharError && (
+                                <p className="text-red-400 text-xs mt-1">{aadharError}</p>
+                            )}
+
+                            {/* Government ID Document Upload */}
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-purple-200 mb-1">Upload Government ID Document</label>
+                                <input
+                                    type="file"
+                                    accept="image/*,application/pdf"
+                                    onChange={handleFileChange}
+                                    // required
+                                    className="w-full px-4 py-3 rounded-lg bg-slate-700/60 border border-purple-500/30 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    disabled={uploading}
+                                />
+                                <p className="text-xs text-slate-400 mt-1">Supported formats: JPG, PNG, PDF (Max 5MB)</p>
+                                {uploading && (
+                                    <div className="text-blue-400 text-xs mt-1">Uploading document...</div>
+                                )}
+                                {idDocumentPreview && !uploading && (
+                                    <button
+                                        type="button"
+                                        className="mt-2 px-4 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                                        onClick={() => setShowPreview(true)}
+                                    >
+                                        Preview Document
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Submit Button */}
+                            <div className="md:col-span-2 mt-2">
+                                <button
+                                    type="submit"
+                                    disabled={loading || uploading}
+                                    className="w-full py-3 rounded-lg bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold shadow-lg shadow-purple-500/30 transition disabled:opacity-60"
+                                >
+                                    {loading ? 'Registering...' : 'Register'}
+                                </button>
+                            </div>
+                        </form>
+
+                        <p className="mt-4 text-center text-slate-300 text-sm">
+                            Already have an account?{' '}
+                            <Link to="/login" className="text-purple-300 hover:text-purple-100 font-semibold">
+                                Login
+                            </Link>
+                        </p>
+                    </div>
                 </div>
-            </div>
 
-            <style>{`
+                <style>{`
         @keyframes blob {
           0%, 100% { transform: translate(0, 0) scale(1); }
           33% { transform: translate(30px, -50px) scale(1.1); }
@@ -288,7 +301,37 @@ const Register = () => {
           animation-delay: 2s;
         }
       `}</style>
-        </div>
+            </div>
+            {/* Professional Modal for document preview */}
+            {
+                showPreview && idDocumentPreview && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+                        <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl w-full relative">
+                            <button
+                                className="absolute top-2 right-2 text-gray-600 hover:text-gray-900 text-2xl font-bold"
+                                onClick={() => setShowPreview(false)}
+                            >
+                                &times;
+                            </button>
+                            <h3 className="text-lg font-semibold mb-4">Document Preview</h3>
+                            {idDocumentPreview.endsWith('.pdf') ? (
+                                <iframe
+                                    src={idDocumentPreview}
+                                    title="Document Preview"
+                                    className="w-full h-96 border rounded"
+                                />
+                            ) : (
+                                <img
+                                    src={idDocumentPreview}
+                                    alt="Document Preview"
+                                    className="w-full max-h-96 object-contain border rounded"
+                                />
+                            )}
+                        </div>
+                    </div>
+                )
+            }
+        </>
     );
 };
 

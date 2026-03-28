@@ -159,11 +159,11 @@ const AdminLogin = () => {
                     </form>
 
                     {/* Demo Credentials */}
-                    <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                    {/* <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
                         <p className="text-blue-200 text-xs font-semibold mb-2">Demo Credentials:</p>
                         <p className="text-blue-300 text-xs">Email: admin@evoting.com</p>
                         <p className="text-blue-300 text-xs">Password: admin123</p>
-                    </div>
+                    </div> */}
 
                     {/* Back Link */}
                     <div className="mt-6 text-center">

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../utils/api';
+import { userAPI } from '../utils/api';
 
 const ForgotPassword = () => {
     const navigate = useNavigate();
@@ -29,8 +29,8 @@ const ForgotPassword = () => {
         setError('');
 
         try {
-            const response = await api.post('/user/forgot-password', { email });
-            setUserId(response.data.userId);
+            const response = await userAPI.forgotPassword({ email });
+            setUserId(response.data.data.userId);
             setMessage('OTP sent to your email. Check your inbox.');
             setStep('otp');
             setTimer(60);
@@ -56,6 +56,8 @@ const ForgotPassword = () => {
             // Just verify OTP and move to password reset
             setMessage('OTP verified! Now set your new password.');
             setStep('password');
+            console.log(userId);
+
         } catch (error) {
             setError('Failed to verify OTP');
         } finally {
@@ -68,7 +70,7 @@ const ForgotPassword = () => {
         setError('');
 
         try {
-            await api.post('/user/forgot-password', { email });
+            await userAPI.forgotPassword({ email });
             setMessage('OTP resent to your email');
             setTimer(60);
         } catch (error) {
@@ -96,7 +98,7 @@ const ForgotPassword = () => {
         }
 
         try {
-            await api.post('/user/reset-password', {
+            await userAPI.resetPassword({
                 userId,
                 otp,
                 newPassword,

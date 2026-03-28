@@ -19,7 +19,9 @@ export const AuthProvider = ({ children }) => {
     const fetchUser = async () => {
         try {
             const response = await authAPI.getMe();
-            setUser(response.data.user);
+            console.log(response.data);
+            
+            setUser(response.data.data);
         } catch (error) {
             console.log('Failed to fetch user');
             localStorage.removeItem('token');

@@ -15,7 +15,7 @@ import { ErrorHandler, asyncHandler } from "../utils/errorHandler.js";
  * @param {string} password - User's password (min 8 chars)
  * @param {string} governmentIdType - Type of government ID (aadhar, pan, etc.)
  * @param {string} governmentIdNumber - Government ID number
- * @param {string} governmentIdDocument - Base64 encoded government ID
+ * @param {string} govermentIdDocumentUrl - Base64 encoded government ID
  */
 export const register = asyncHandler(async (req, res, next) => {
   const {
@@ -25,7 +25,7 @@ export const register = asyncHandler(async (req, res, next) => {
     password,
     governmentIdType,
     governmentIdNumber,
-    governmentIdDocument,
+    govermentIdDocumentUrl,
   } = req.body;
 
   // 1. Validate required fields
@@ -49,7 +49,7 @@ export const register = asyncHandler(async (req, res, next) => {
   if (!governmentIdNumber) {
     return next(new ErrorHandler("Government ID number is required", 400));
   }
-  if (!governmentIdDocument) {
+  if (!govermentIdDocumentUrl) {
     return next(new ErrorHandler("Government ID document is required", 400));
   }
 
@@ -76,7 +76,7 @@ export const register = asyncHandler(async (req, res, next) => {
     otpExpiry,
     governmentIdType,
     governmentIdNumber,
-    governmentIdDocument,
+    govermentIdDocumentUrl,
     accountStatus: "pending",
     isApproved: false,
     role: "voter",
@@ -210,16 +210,21 @@ export const login = asyncHandler(async (req, res, next) => {
 
   // 2. Find user with password field
   const user = await User.findOne({ email }).select("+password");
+  // console.log("USER FOUND ",user);
+  
   if (!user) {
     return next(new ErrorHandler("Invalid email or password", 401));
   }
 
   // 3. Compare passwords
+  
+  console.log("Logginng", user);
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
     return next(new ErrorHandler("Invalid email or password", 401));
   }
 
+  console.log("Logginng", user);
   // 4. Check email verification
   if (!user.isEmailVerified) {
     const otp = generateOTP();
@@ -242,6 +247,7 @@ export const login = asyncHandler(async (req, res, next) => {
     });
   }
 
+  console.log("Logginng", user);
   // 5. Check account status
   if (user.accountStatus === "rejected") {
     return next(new ErrorHandler("Your account has been rejected", 403));
@@ -257,7 +263,8 @@ export const login = asyncHandler(async (req, res, next) => {
       },
     });
   }
-
+  console.log("Logginng",user);
+  
   // 6. Generate token
   const token = generateToken(user._id);
 
@@ -285,7 +292,9 @@ export const login = asyncHandler(async (req, res, next) => {
  */
 export const getMe = asyncHandler(async (req, res, next) => {
   // 1. Get user from request context
+  
   const user = await User.findById(req.user.id);
+
   if (!user) {
     return next(new ErrorHandler("User not found", 404));
   }
@@ -332,12 +341,15 @@ export const resendOTP = asyncHandler(async (req, res, next) => {
   const otp = generateOTP();
   const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
+  console.log(`[resendOTP] Generated OTP:`, otp);
   user.otp = otp;
   user.otpExpiry = otpExpiry;
   await user.save();
+  console.log(`[resendOTP] OTP saved to user:`, user.otp);
 
   // 4. Send OTP
   const sent = await sendOTP(user.email, otp);
+  console.log(`[resendOTP] OTP sent via email:`, otp, 'to', user.email, 'sent:', sent);
   if (!sent) {
     return next(new ErrorHandler("Failed to send OTP", 500));
   }

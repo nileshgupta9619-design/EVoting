@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../utils/api';
+import { userAPI } from '../utils/api';
 
 const ChangePassword = () => {
     const navigate = useNavigate();
@@ -54,7 +54,7 @@ const ChangePassword = () => {
         }
 
         try {
-            const response = await api.post('/user/change-password', {
+            const response = await userAPI.changePassword({
                 currentPassword: formData.currentPassword,
                 newPassword: formData.newPassword,
                 confirmPassword: formData.confirmPassword,

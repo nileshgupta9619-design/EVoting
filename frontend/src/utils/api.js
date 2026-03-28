@@ -77,6 +77,15 @@ export const electionAPI = {
   stop: (id) => api.put(`/elections/${id}/stop`),
 };
 
+export const userAPI = {
+  changePassword: (data) => api.post("/user/change-password", data),
+  forgotPassword: (data) => api.post("/user/forgot-password", data),
+  resetPassword: (data) => api.post("/user/reset-password", data),
+  updateProfile: (data) => api.put("/user/profile", data),
+  getProfile: () => api.get("/user/profile"),
+  deleteAccount: () => api.delete("/user/account"),
+};
+
 export const adminAPI = {
   login: (data) => api.post("/admin/login", data),
   getUsers: () => api.get("/admin/users"),
