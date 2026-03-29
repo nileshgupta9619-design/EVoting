@@ -18,7 +18,7 @@ import { ErrorHandler, asyncHandler } from "../utils/errorHandler.js";
  * @access Public
  */
 export const getAllCandidates = asyncHandler(async (req, res) => {
-  const candidates = await Candidate.find().sort({ voteCount: -1 });
+  const candidates = await CandidateProfile.find().sort({ voteCount: -1 });
 
   res.status(200).json({
     success: true,
@@ -33,7 +33,7 @@ export const getAllCandidates = asyncHandler(async (req, res) => {
  * @access Public
  */
 export const getCandidateById = asyncHandler(async (req, res, next) => {
-  const candidate = await Candidate.findById(req.params.id);
+  const candidate = await CandidateProfile.findById(req.params.id);
 
   if (!candidate) {
     return next(new ErrorHandler("Candidate not found", 404));
@@ -111,10 +111,11 @@ export const deleteCandidate = asyncHandler(async (req, res, next) => {
  * @access Private (Approved voters only)
  */
 export const voteInElection = asyncHandler(async (req, res, next) => {
-  const { electionId, candidateProfileId } = req.body;
+  const { electionId } = req.params;
+  const {  candidateProfileId } = req.body;
   const userId = req.user._id;
   const now = new Date();
-
+  console.log(electionId,candidateProfileId,userId)
   if (!electionId || !candidateProfileId) {
     return next(
       new ErrorHandler(
@@ -212,7 +213,7 @@ export const voteInElection = asyncHandler(async (req, res, next) => {
   await election.save();
 
   await AuditLog.create({
-    userId,
+    adminId:userId,
     action: "vote_cast",
     targetType: "Vote",
     targetId: vote._id,
@@ -252,7 +253,7 @@ export const vote = asyncHandler(async (req, res, next) => {
     return next(new ErrorHandler("You have already voted", 400));
   }
 
-  const candidate = await Candidate.findById(candidateId);
+  const candidate = await CandidateProfile.findById(candidateId);
 
   if (!candidate) {
     return next(new ErrorHandler("Candidate not found", 404));

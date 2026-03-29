@@ -16,6 +16,8 @@ export default function AdminElections() {
     const [loading, setLoading] = useState(true);
     const [alert, setAlert] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingElection, setEditingElection] = useState(null);
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -67,7 +69,7 @@ export default function AdminElections() {
 
         setSubmitting(true);
         try {
-            
+
             await electionAPI.create(formData);
             setAlert({
                 type: 'success',
@@ -122,6 +124,72 @@ export default function AdminElections() {
                 title: 'Error',
                 message: 'Failed to stop election',
             });
+        }
+    };
+
+    const handleEditElection = (election) => {
+        setEditingElection(election);
+        setFormData({
+            title: election.title,
+            description: election.description,
+            startDate: election.startDate ? election.startDate.slice(0, 16) : '',
+            endDate: election.endDate ? election.endDate.slice(0, 16) : '',
+        });
+        setShowEditModal(true);
+        setErrors({});
+    };
+
+    const handleUpdateElection = async (e) => {
+        e.preventDefault();
+        const newErrors = validateForm();
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            await electionAPI.update(editingElection._id, formData);
+            setAlert({
+                type: 'success',
+                title: 'Election Updated',
+                message: 'Election has been updated successfully',
+            });
+            setShowEditModal(false);
+            setEditingElection(null);
+            setFormData({ title: '', description: '', startDate: '', endDate: '' });
+            toast.success("Election updated successfully");
+            fetchElections();
+        } catch (error) {
+            setAlert({
+                type: 'error',
+                title: 'Error',
+                message: error.response?.data?.message || 'Failed to update election',
+            });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleDeleteElection = async (electionId) => {
+        if (window.confirm('Are you sure you want to delete this election? This action cannot be undone.')) {
+            try {
+                await electionAPI.delete(electionId);
+                setAlert({
+                    type: 'success',
+                    title: 'Election Deleted',
+                    message: 'Election has been deleted successfully',
+                });
+                toast.success("Election deleted successfully");
+                fetchElections();
+            } catch (error) {
+                setAlert({
+                    type: 'error',
+                    title: 'Error',
+                    message: error.response?.data?.message || 'Failed to delete election',
+                });
+            }
         }
     };
 
@@ -233,6 +301,8 @@ export default function AdminElections() {
                                 status={getElectionStatus(election)}
                                 onStart={() => handleStartElection(election._id)}
                                 onStop={() => handleStopElection(election._id)}
+                                onEdit={() => handleEditElection(election)}
+                                onDelete={() => handleDeleteElection(election._id)}
                                 onViewCandidates={() => navigate(`/admin/election/${election._id}/candidates`)}
                             />
                         ))}
@@ -319,12 +389,88 @@ export default function AdminElections() {
                         </div>
                     </form>
                 </Modal>
+
+                {/* Edit Election Modal */}
+                <Modal
+                    isOpen={showEditModal}
+                    onClose={() => {
+                        setShowEditModal(false);
+                        setEditingElection(null);
+                        setFormData({ title: '', description: '', startDate: '', endDate: '' });
+                        setErrors({});
+                    }}
+                    title="Edit Election"
+                >
+                    <form onSubmit={handleUpdateElection} className="space-y-4">
+                        <Input
+                            label="Election Title"
+                            name="title"
+                            placeholder="e.g., 2024 General Election"
+                            value={formData.title}
+                            onChange={handleChange}
+                            error={errors.title}
+                        />
+
+                        <div>
+                            <label className="block text-gray-700 font-medium text-sm mb-2">
+                                Description
+                            </label>
+                            <textarea
+                                name="description"
+                                placeholder="Describe this election..."
+                                value={formData.description}
+                                onChange={handleChange}
+                                rows="3"
+                                className={`w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 ${errors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''
+                                    }`}
+                            />
+                            {errors.description && <p className="text-red-600 text-sm mt-1">⚠ {errors.description}</p>}
+                        </div>
+
+                        <Input
+                            label="Start Date & Time"
+                            type="datetime-local"
+                            name="startDate"
+                            value={formData.startDate}
+                            onChange={handleChange}
+                            error={errors.startDate}
+                        />
+
+                        <Input
+                            label="End Date & Time"
+                            type="datetime-local"
+                            name="endDate"
+                            value={formData.endDate}
+                            onChange={handleChange}
+                            error={errors.endDate}
+                        />
+
+                        <div className="flex gap-3 pt-4">
+                            <Button type="submit" loading={submitting} disabled={submitting} className="flex-1">
+                                Update Election
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={() => {
+                                    setShowEditModal(false);
+                                    setEditingElection(null);
+                                    setFormData({ title: '', description: '', startDate: '', endDate: '' });
+                                    setErrors({});
+                                }}
+                                variant="secondary"
+                                className="flex-1"
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </form>
+                </Modal>
             </div>
         </MainLayout>
     );
 }
 
-function ElectionAdminCard({ election, status, onStart, onStop, onViewCandidates }) {
+function ElectionAdminCard({ election, status, onStart, onStop, onEdit, onDelete, onViewCandidates }) {
     const startDate = election.startDate ? new Date(election.startDate).toLocaleString() : 'Not set';
     const endDate = election.endDate ? new Date(election.endDate).toLocaleString() : 'Not set';
 
@@ -372,6 +518,12 @@ function ElectionAdminCard({ election, status, onStart, onStop, onViewCandidates
                 )}
                 <Button onClick={onViewCandidates} variant="outline" className="!px-4">
                     View Candidates
+                </Button>
+                <Button onClick={onEdit} variant="outline" className="!px-4">
+                    ✏️ Edit
+                </Button>
+                <Button onClick={onDelete} variant="danger" className="!px-4">
+                    🗑️ Delete
                 </Button>
             </div>
         </Card>

@@ -7,6 +7,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
 import Alert from '../components/Alert';
+import BecomeCandidateModal from '../components/BecomeCandidate';
 
 export default function Dashboard() {
     const { user } = useAuth();
@@ -14,6 +15,7 @@ export default function Dashboard() {
     const [elections, setElections] = useState([]);
     const [loading, setLoading] = useState(true);
     const [alert, setAlert] = useState(null);
+    const [showBecomeCandidate, setShowBecomeCandidate] = useState(false);
 
     useEffect(() => {
         fetchElections();
@@ -116,6 +118,42 @@ export default function Dashboard() {
                     </Card>
                 </div>
 
+                {/* Become a Candidate Card */}
+                <Card className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg hover:shadow-xl transition-shadow">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-bold mb-2">🗳️ Interested in Running?</h2>
+                            <p className="text-indigo-100">
+                                Apply to become a candidate in an upcoming election
+                            </p>
+                        </div>
+                        <Button
+                            onClick={() => setShowBecomeCandidate(true)}
+                            className="bg-purple-950 text-indigo-600 hover:bg-purple-500 font-semibold px-6"
+                        >
+                            Register Here
+                        </Button>
+                    </div>
+                </Card>
+
+                {/* Voting History Card */}
+                <Card className="bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-lg hover:shadow-xl transition-shadow">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-bold mb-2">✓ Your Voting History</h2>
+                            <p className="text-rose-100">
+                                View all elections you voted in and review your choices
+                            </p>
+                        </div>
+                        <Button
+                            onClick={() => navigate('/voted-elections')}
+                            className="bg-rose-950 text-rose-300 hover:bg-rose-700 font-semibold px-6"
+                        >
+                            View History
+                        </Button>
+                    </div>
+                </Card>
+
                 {/* Active Elections */}
                 {activeElections.length > 0 && (
                     <section>
@@ -171,6 +209,12 @@ export default function Dashboard() {
                     </Card>
                 )}
             </div>
+
+            {/* Become a Candidate Modal */}
+            <BecomeCandidateModal
+                isOpen={showBecomeCandidate}
+                onClose={() => setShowBecomeCandidate(false)}
+            />
         </MainLayout>
     );
 }

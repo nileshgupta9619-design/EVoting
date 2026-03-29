@@ -7,7 +7,7 @@ const UserProfile = () => {
     const navigate = useNavigate();
     const { user, logout, token } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
-    const [userData, setUserData] = useState(null);
+    const [userData, setUserData] = useState(user);
     const [formData, setFormData] = useState({
         fullName: '',
         phone: '',
@@ -15,40 +15,39 @@ const UserProfile = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
-    const [accountStatus, setAccountStatus] = useState(''); // New state for account status
 
     if (!token) {
         navigate('/login');
         return null;
     }
+    const fetchUserData = async () => {
+        try {
+            const response = await userAPI.getProfile(); // Ensure this is the correct route
 
-    useEffect(() => {
-        // Fetch fresh user data from backend
 
-        const fetchUserData = async () => {
-            try {
-                const response = await userAPI.getProfile(); // Ensure this is the correct route
-                if (response.data?.user) {
-                    setUserData(response.data.user);
-                    console.log(response.data.user)
-                    setFormData({
-                        fullName: response.data.user.fullName || '',
-                        phone: response.data.user.phone || '',
-                        accountStatus: response.data.user.accountStatus || '', // Handle account status
-                    });
-                }
-            } catch (error) {
-                console.error('Failed to fetch user data:', error);
-                setError('Failed to load profile data');
+            if (response.data?.data) {
+                setUserData(response.data.data);
+                // console.log(response.data.data)
+                setFormData({
+                    fullName: response.data.data.fullName || '',
+                    phone: response.data.data.phone || '',
+                    accountStatus: response.data.data.accountStatus || '', // Handle account status
+                });
             }
-        };
-
-        if (token) {
-            fetchUserData();
-        } else {
-            navigate('/login');
+        } catch (error) {
+            console.error('Failed to fetch user data:', error);
+            setError('Failed to load profile data');
         }
-    }, [token, navigate]);
+    };
+
+    // useEffect(() => {
+    //     // Fetch fresh user data from backend
+    //     if (token) {
+    //         fetchUserData();
+    //     } else {
+    //         navigate('/login');
+    //     }
+    // }, [token, navigate]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -78,6 +77,7 @@ const UserProfile = () => {
 
             setMessage('Profile updated successfully!');
             setIsEditing(false);
+            fetchUserData()
         } catch (error) {
             setError(error.response?.data?.message || 'Failed to update profile');
         } finally {
@@ -152,7 +152,7 @@ const UserProfile = () => {
                             <div>
                                 <p className="text-xs text-purple-300 mb-1">Email Verified</p>
                                 <p className="font-semibold mb-3">
-                                    {userData?.isEmailVerified ? <p className='text-green-400'>✓ Yes</p> : <p className='text-red-500'>✗ No</p>}
+                                    {userData?.isEmailVerified ? <span className='text-green-400'>✓ Yes</span> : <span className='text-red-500'>✗ No</span>}
                                 </p>
                                 <p className="text-xs text-purple-300 mb-1">Voting Status</p>
                                 <p className="font-semibold mb-3">

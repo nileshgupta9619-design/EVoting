@@ -72,7 +72,10 @@ export const electionAPI = {
   get: (id) => api.get(`/elections/${id}`),
   candidates: (id) => api.get(`/elections/${id}/candidates`),
   results: (id) => api.get(`/elections/${id}/results`),
+  getAllResults: () => api.get("/elections/results/all"),
   create: (data) => api.post(`/elections`, data),
+  update: (id, data) => api.put(`/elections/${id}`, data),
+  delete: (id) => api.delete(`/elections/${id}`),
   start: (id) => api.put(`/elections/${id}/start`),
   stop: (id) => api.put(`/elections/${id}/stop`),
 };
@@ -84,6 +87,9 @@ export const userAPI = {
   updateProfile: (data) => api.put("/user/profile", data),
   getProfile: () => api.get("/user/profile"),
   deleteAccount: () => api.delete("/user/account"),
+  getVotedElections: () => api.get("/user/voted-elections/all"),
+  getVotedElectionDetails: (electionId) =>
+    api.get(`/user/voted-elections/${electionId}`),
 };
 
 export const adminAPI = {

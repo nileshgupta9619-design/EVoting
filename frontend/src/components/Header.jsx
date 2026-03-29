@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Button from './Button';
@@ -7,7 +7,21 @@ export default function Header({ showNavigation = true }) {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef =  useRef(null)
 
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setShowDropdown(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
     const handleLogout = () => {
         logout();
         navigate('/login');
@@ -47,15 +61,20 @@ export default function Header({ showNavigation = true }) {
 
                         {/* User Dropdown */}
                         {user ? (
-                            <div className="relative">
+                            <div className="relative" ref={dropdownRef}>
                                 <button
                                     onClick={() => setShowDropdown(!showDropdown)}
                                     className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
                                 >
                                     <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                        {user.name?.charAt(0).toUpperCase() || 'U'}
+                                        {user.fullName?.charAt(0).toUpperCase() || 'U'}
                                     </div>
-                                    <span className="hidden sm:block text-sm font-medium text-gray-700">{user.name || 'User'}</span>
+                                    {/* <span className="hidden sm:block text-sm font-medium text-gray-700">{user?.fullName ? user.fullName.length > 6
+                                        ? user.fullName.toUpperCase().substring(0, 6) + '...'
+                                        : user.fullName.toUpperCase() : 'User'}</span> */}
+                                    <span className="hidden sm:block text-sm font-medium text-gray-700 truncate max-w-[120px]">
+                                        {user?.fullName?.toUpperCase() || 'User'}
+                                    </span>
                                     <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                                     </svg>

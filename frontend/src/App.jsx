@@ -21,10 +21,14 @@ import VoterDashboard from './pages/VoterDashboard';
 import ElectionsPage from './pages/ElectionsPage';
 import VotingPage from './pages/VotingPage';
 import ResultsPage from './pages/ResultsPage';
+import AllElectionsResultsPage from './pages/AllElectionsResultsPage';
+import ReceiptPage from './pages/ReceiptPage';
+import VotedElectionsPage from './pages/VotedElectionsPage';
 
 // Candidate Pages
 import CandidateDashboard from './pages/CandidateDashboard';
 import CandidateProfilePage from './pages/CandidateProfilePage';
+import CandidateRegisterPage from './pages/CandidateRegisterPage';
 
 // Admin Pages
 import AdminLogin from './pages/AdminLogin';
@@ -32,8 +36,12 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminUsers from './pages/AdminUsers';
 import AdminCandidates from './pages/AdminCandidates';
 import AdminElections from './pages/AdminElections';
+import AdminReports from './pages/AdminReports';
+import AdminMonitoring from './pages/AdminMonitoring';
+import AdminLogs from './pages/AdminLogs';
 
 import './App.css';
+import VotePage from './pages/votePage';
 
 function App() {
     return (
@@ -45,6 +53,7 @@ function App() {
                         <Route path="/" element={<Home />} />
                         <Route path="/register" element={<Register />} />
                         <Route path="/login" element={<Login />} />
+                        <Route path="/candidate/register" element={<CandidateRegisterPage />} />
                         <Route path="/candidate/login" element={<CandidateLogin />} />
                         <Route path="/verify-otp" element={<VerifyOTP />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -67,6 +76,14 @@ function App() {
                             }
                         />
                         <Route
+                            path="/vote"
+                            element={
+                                <PrivateRoute>
+                                    <VotePage />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
                             path="/vote/:electionId"
                             element={
                                 <PrivateRoute>
@@ -83,6 +100,14 @@ function App() {
                             }
                         />
                         <Route
+                            path="/all-results"
+                            element={
+                                <PrivateRoute>
+                                    <AllElectionsResultsPage />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
                             path="/profile"
                             element={
                                 <PrivateRoute>
@@ -95,6 +120,22 @@ function App() {
                             element={
                                 <PrivateRoute>
                                     <ChangePassword />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/voted-elections"
+                            element={
+                                <PrivateRoute>
+                                    <VotedElectionsPage />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/receipt"
+                            element={
+                                <PrivateRoute>
+                                    <ReceiptPage />
                                 </PrivateRoute>
                             }
                         />
@@ -180,7 +221,7 @@ function App() {
                             path="/admin/reports"
                             element={
                                 <AdminRoute>
-                                    <AdminDashboardPage />
+                                    <AdminReports />
                                 </AdminRoute>
                             }
                         />
@@ -188,7 +229,7 @@ function App() {
                             path="/admin/monitoring"
                             element={
                                 <AdminRoute>
-                                    <AdminDashboardPage />
+                                    <AdminMonitoring />
                                 </AdminRoute>
                             }
                         />
@@ -196,7 +237,7 @@ function App() {
                             path="/admin/logs"
                             element={
                                 <AdminRoute>
-                                    <AdminDashboardPage />
+                                    <AdminLogs />
                                 </AdminRoute>
                             }
                         />

@@ -9,7 +9,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import candidateProfileRoutes from "./routes/candidateProfileRoutes.js";
 import electionRoutes from "./routes/electionRoutes.js";
 import { ErrorHandler } from "./utils/errorHandler.js";
-
+import jwt from "jsonwebtoken";
 dotenv.config();
 
 const app = express();
@@ -32,7 +32,7 @@ const connectDB = async () => {
       useUnifiedTopology: true,
     });
     
-registerUser();
+// registerUser();
     console.log("✓ MongoDB connected successfully");
   } catch (error) {
     console.error("✗ MongoDB connection error:", error.message);

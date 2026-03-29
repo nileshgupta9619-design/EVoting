@@ -13,13 +13,18 @@ export default function Sidebar() {
         navigate('/admin/login');
     };
 
-    const isActive = (path) => location.pathname.startsWith(path);
+    const isActive = (path) => {
+        if (path === '/') return location.pathname === '/';
+        return location.pathname === path || location.pathname.startsWith(path + '/');
+    };
 
     const voterMenuItems = [
         { icon: '🏠', label: 'Dashboard', path: '/dashboard' },
         { icon: '📋', label: 'Elections', path: '/elections' },
         { icon: '🗳️', label: 'Vote', path: '/vote' },
-        { icon: '📊', label: 'Results', path: '/results' },
+        { icon: '✓', label: 'Voting History', path: '/voted-elections' },
+        // { icon: '📊', label: 'Results', path: '/results' },
+        { icon: '📊', label: 'All Results', path: '/all-results' },
         { icon: '🎟️', label: 'Receipt', path: '/receipt' },
     ];
 
@@ -67,8 +72,8 @@ export default function Sidebar() {
                             key={item.path}
                             to={item.path}
                             className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive(item.path)
-                                    ? 'bg-blue-600 text-white'
-                                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                                 }`}
                         >
                             <span className="text-xl flex-shrink-0">{item.icon}</span>

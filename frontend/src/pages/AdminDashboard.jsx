@@ -7,19 +7,14 @@ import AdminHeader from '../components/AdminHeader';
 import RegistrationTab from '../components/RegistrationTab';
 import CandidateTab from '../components/CandidateTab';
 import MonitoringTab from '../components/MonitoringTab';
-import ReportsTab from '../components/ReportTab';
+import ReportTab from '../components/ReportTab';
 import RequestTab from '../components/RequestTab';
 import ElectionsTab from '../components/ElectionsTab';
-import AuditLog from '../../../backend/src/models/AuditLog';
 import AuditLogTab from '../components/AuditLogTab';
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
-    // const { admin, token } = useSelector((state) => state.admin);
-    const [admin, setAdmin] = useState({
-        email:"admin123@gmail.com"
-         
-    })
+    const { admin, token } = useSelector((state) => state.admin);
     const [activeTab, setActiveTab] = useState('overview');
     const [candidates, setCandidates] = useState([]);
     const [pendingProfiles, setPendingProfiles] = useState([]);
@@ -203,7 +198,7 @@ const AdminDashboard = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
             {/* Header */}
-           <AdminHeader admin={admin} handleLogout={handleLogout}/>
+            <AdminHeader admin={admin} handleLogout={handleLogout} />
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-6 py-8">
                 {/* Stats Cards */}
@@ -287,17 +282,17 @@ const AdminDashboard = () => {
 
                                 {/* Pending Registrations Tab */}
                                 {activeTab === 'registrations' && (
-                                    <RegistrationTab pendingRegistrations={pendingRegistrations}/>
+                                    <RegistrationTab pendingRegistrations={pendingRegistrations} />
                                 )}
 
                                 {/* Candidates Tab */}
                                 {activeTab === 'candidates' && (
-                                    <CandidateTab candidates={candidates}/>
+                                    <CandidateTab candidates={candidates} />
                                 )}
 
                                 {/* Requests Tab */}
                                 {activeTab === 'requests' && (
-                                    <RequestTab pendingProfiles={pendingProfiles}/>
+                                    <RequestTab pendingProfiles={pendingProfiles} />
                                 )}
 
                                 {/* Users Tab */}
@@ -376,19 +371,19 @@ const AdminDashboard = () => {
 
                                 {/* Elections Tab */}
                                 {activeTab === 'elections' && (
-                                   <ElectionsTab elections={elections}/>
+                                    <ElectionsTab elections={elections} />
                                 )}
 
                                 {/* Logs Tab */}
                                 {activeTab === 'logs' && (
-                                   <AuditLogTab logs={logs}/>
+                                    <AuditLogTab logs={logs} />
                                 )}
 
                                 {/* Reports Tab */}
                                 {activeTab === 'reports' && (
                                     <div>
                                         <h2 className="text-2xl font-bold text-white mb-6">Election Reports</h2>
-                                        <ReportsTab elections={elections} />
+                                        <ReportTab elections={elections} />
                                     </div>
                                 )}
 

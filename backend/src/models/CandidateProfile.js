@@ -6,12 +6,11 @@ const candidateProfileSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true,
+      // Removed unique constraint to allow multiple profiles per user (one per election)
     },
     voterId: {
       type: String,
       required: [true, "Please provide voter ID"],
-      unique: true,
     },
     voterIdDocument: {
       type: String,
@@ -64,5 +63,8 @@ const candidateProfileSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+// Add unique constraint on userId + election combination to allow one profile per election per user
+candidateProfileSchema.index({ userId: 1, election: 1 }, { unique: true });
 
 export default mongoose.model("CandidateProfile", candidateProfileSchema);

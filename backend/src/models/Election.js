@@ -26,7 +26,7 @@ const electionSchema = new mongoose.Schema(
     candidates: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Candidate",
+        ref: "CandidateProfile",
       },
     ],
     totalVotes: {

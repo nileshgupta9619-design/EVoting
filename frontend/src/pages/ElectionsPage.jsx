@@ -34,11 +34,26 @@ export default function ElectionsPage() {
     };
 
     if (loading) return <Loading fullScreen />;
+    const getElectionStatus = (election) => {
+        const now = new Date();
+        const start = election.startDate ? new Date(election.startDate) : null;
+        const end = election.endDate ? new Date(election.endDate) : null;
 
+        if (!start || !end) return 'draft';
+
+        if (now < start) return 'upcoming';
+
+        if (now >= start && now <= end && election.isActive) return 'active';
+
+        if (now > end || !election.isActive) return 'completed';
+
+        return 'draft';
+    };
+    
     const filteredElections =
         filter === 'all'
             ? elections
-            : elections.filter((e) => e.status === filter);
+            : elections.filter((e) => getElectionStatus(e) === filter);
 
     return (
         <MainLayout>
@@ -70,7 +85,7 @@ export default function ElectionsPage() {
                                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
                                 }`}
                         >
-                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                            {status.charAt(0)?.toUpperCase() + status.slice(1)}
                         </button>
                     ))}
                 </div>
@@ -118,7 +133,7 @@ function ElectionCard({ election, onVote, onResults, onViewDetails }) {
             {/* Status Badge */}
             <div className="flex items-start justify-between mb-4">
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusBadgeColor[election.status]}`}>
-                    {election.status.toUpperCase()}
+                    {election.status?.toUpperCase()}
                 </span>
                 {daysRemaining > 0 && election.status !== 'completed' && (
                     <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">

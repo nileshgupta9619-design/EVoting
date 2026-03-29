@@ -209,7 +209,7 @@ export default function AdminDashboard() {
                                         <span className={`px-3 py-1 text-xs font-medium rounded-full ${election.status === 'active' ? 'bg-green-100 text-green-800' :
                                                 election.status === 'upcoming' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                                             }`}>
-                                            {election.status.toUpperCase()}
+                                            {election.status?.toUpperCase()}
                                         </span>
                                     </div>
                                 ))}

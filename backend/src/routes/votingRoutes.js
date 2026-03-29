@@ -20,7 +20,7 @@ const router = express.Router();
 router.get("/candidates", getAllCandidates);
 router.get("/candidates/:id", getCandidateById);
 router.get("/results", getResults);
-router.post("/vote", protect, vote);
+// router.post("/vote", protect, vote);//not need as we have voteInElection
 
 // Election-based voting routes
 router.post("/election/:electionId/vote", protect, voteInElection);

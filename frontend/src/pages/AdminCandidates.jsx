@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { candidateProfileAPI } from '../utils/api';
+import { candidateProfileAPI, votingAPI } from '../utils/api';
 import MainLayout from '../components/MainLayout';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -22,7 +22,8 @@ export default function AdminCandidates() {
 
     const fetchCandidates = async () => {
         try {
-            const response = await candidateProfileAPI.pending();
+            // const response = await candidateProfileAPI.pending();
+            const response = await votingAPI.getCandidates();
             setCandidates(response.data.data || []);
         } catch (error) {
             setAlert({

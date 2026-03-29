@@ -1,8 +1,12 @@
 import User from "../models/User.js";
+import Vote from "../models/Vote.js";
+import Election from "../models/Election.js";
+import CandidateProfile from "../models/CandidateProfile.js";
 import bcrypt from "bcryptjs";
 import { generateOTP } from "../utils/helpers.js";
 import { sendOTP } from "../utils/emailService.js";
 import { ErrorHandler, asyncHandler } from "../utils/errorHandler.js";
+import { decrypt } from "../utils/cryptoUtils.js";
 import AuditLog from "../models/AuditLog.js";
 
 /**
@@ -27,10 +31,11 @@ export const changePassword = asyncHandler(async (req, res, next) => {
   if (!confirmPassword) {
     return next(new ErrorHandler("Password confirmation is required", 400));
   }
-
   // 2. Validate password format
   if (newPassword.length < 8) {
-    return next(new ErrorHandler("New password must be at least 8 characters", 400));
+    return next(
+      new ErrorHandler("New password must be at least 8 characters", 400),
+    );
   }
 
   // 3. Check passwords match
@@ -38,10 +43,17 @@ export const changePassword = asyncHandler(async (req, res, next) => {
     return next(new ErrorHandler("Passwords do not match", 400));
   }
 
+  console.log(req.body);
+
   // 4. Verify new password is different
-  const isNewSameAsCurrent = await bcrypt.compare(newPassword, req.user.password);
+  const isNewSameAsCurrent = await bcrypt.compare(newPassword, currentPassword);
   if (isNewSameAsCurrent) {
-    return next(new ErrorHandler("New password must be different from current password", 400));
+    return next(
+      new ErrorHandler(
+        "New password must be different from current password",
+        400,
+      ),
+    );
   }
 
   // 5. Get user with password field
@@ -51,7 +63,10 @@ export const changePassword = asyncHandler(async (req, res, next) => {
   }
 
   // 6. Verify current password
-  const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+  const isCurrentPasswordValid = await bcrypt.compare(
+    currentPassword,
+    user.password,
+  );
   if (!isCurrentPasswordValid) {
     return next(new ErrorHandler("Current password is incorrect", 401));
   }
@@ -62,7 +77,7 @@ export const changePassword = asyncHandler(async (req, res, next) => {
 
   // 8. Log action
   await AuditLog.create({
-    userId: user._id,
+    adminId: user._id,
     action: "password_changed",
     targetType: "User",
     targetId: user._id,
@@ -141,8 +156,8 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
  * @param {string} confirmPassword - Password confirmation
  */
 export const resetPassword = asyncHandler(async (req, res, next) => {
-  console.log("req.body",req.body);
-  
+  console.log("req.body", req.body);
+
   const { userId, otp, newPassword, confirmPassword } = req.body;
 
   // 1. Validate inputs
@@ -161,7 +176,9 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
 
   // 2. Validate password format
   if (newPassword.length < 8) {
-    return next(new ErrorHandler("Password must be at least 8 characters", 400));
+    return next(
+      new ErrorHandler("Password must be at least 8 characters", 400),
+    );
   }
 
   // 3. Check passwords match
@@ -188,7 +205,12 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
   // 7. Verify new password is different
   const isSamePassword = await bcrypt.compare(newPassword, user.password);
   if (isSamePassword) {
-    return next(new ErrorHandler("New password must be different from current password", 400));
+    return next(
+      new ErrorHandler(
+        "New password must be different from current password",
+        400,
+      ),
+    );
   }
 
   // 8. Hash and save new password
@@ -209,7 +231,8 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
   // 10. Consistent response
   res.status(200).json({
     success: true,
-    message: "Password reset successfully. Please login with your new password.",
+    message:
+      "Password reset successfully. Please login with your new password.",
   });
 });
 
@@ -226,11 +249,15 @@ export const updateProfile = asyncHandler(async (req, res, next) => {
 
   // 1. Validate inputs
   if (!fullName && !phone) {
-    return next(new ErrorHandler("At least one field is required to update", 400));
+    return next(
+      new ErrorHandler("At least one field is required to update", 400),
+    );
   }
 
   if (fullName && fullName.length < 3) {
-    return next(new ErrorHandler("Full name must be at least 3 characters", 400));
+    return next(
+      new ErrorHandler("Full name must be at least 3 characters", 400),
+    );
   }
 
   // 2. Build update object
@@ -239,11 +266,10 @@ export const updateProfile = asyncHandler(async (req, res, next) => {
   if (phone) updateData.phone = phone;
 
   // 3. Update user
-  const user = await User.findByIdAndUpdate(
-    userId,
-    updateData,
-    { new: true, runValidators: true }
-  );
+  const user = await User.findByIdAndUpdate(userId, updateData, {
+    new: true,
+    runValidators: true,
+  });
 
   if (!user) {
     return next(new ErrorHandler("User not found", 404));
@@ -319,7 +345,9 @@ export const deleteAccount = asyncHandler(async (req, res, next) => {
 
   // 1. Validate input
   if (!password) {
-    return next(new ErrorHandler("Password is required to delete account", 400));
+    return next(
+      new ErrorHandler("Password is required to delete account", 400),
+    );
   }
 
   // 2. Get user with password field
@@ -352,7 +380,8 @@ export const deleteAccount = asyncHandler(async (req, res, next) => {
   // 6. Consistent response
   res.status(200).json({
     success: true,
-    message: "Account deleted successfully. All associated data has been removed.",
+    message:
+      "Account deleted successfully. All associated data has been removed.",
   });
 });
 
@@ -384,3 +413,163 @@ export const getVotingHistory = asyncHandler(async (req, res, next) => {
     },
   });
 });
+
+/**
+ * Get all elections user voted for with full details
+ * @route GET /api/user/voted-elections/all
+ * @access Private
+ * @returns {Array} Elections sorted by most recent first with voting details
+ */
+export const getUserVotedElections = asyncHandler(async (req, res, next) => {
+  const userId = req.user._id || req.user.id;
+
+  // 1. Find all votes for the current user, sorted by most recent first
+  const votes = await Vote.find({ user: userId })
+    .populate({
+      path: "election",
+      select:
+        "title description isActive startDate endDate totalVotes createdAt candidates",
+      populate: {
+        path: "candidates",
+        model: "CandidateProfile",
+        select: "candidateName party description profileImage voteCount",
+      },
+    })
+    .sort({ votedAt: -1 }) // Sort by most recent first
+    .lean();
+
+  if (!votes || votes.length === 0) {
+    return res.status(200).json({
+      success: true,
+      message: "No voted elections found",
+      count: 0,
+      data: [],
+    });
+  }
+
+  // 2. Map votes to elections and decrypt candidate information
+  const votedElections = votes.map((vote) => {
+    let votedCandidateId = null;
+    try {
+      // Decrypt the candidate ID
+      votedCandidateId = decrypt(vote.encryptedCandidate);
+    } catch (error) {
+      console.error("Error decrypting candidate:", error.message);
+      votedCandidateId = null;
+    }
+
+    return {
+      electionId: vote.election._id,
+      electionTitle: vote.election.title,
+      electionDescription: vote.election.description,
+      isActive: vote.election.isActive,
+      startDate: vote.election.startDate,
+      endDate: vote.election.endDate,
+      totalVotes: vote.election.totalVotes,
+      electionCreatedAt: vote.election.createdAt,
+      votedAt: vote.votedAt,
+      receiptCode: vote.receiptCode, // User's receipt code for verification
+      votedCandidateId: votedCandidateId,
+      candidates: vote.election.candidates.map((candidate) => ({
+        candidateId: candidate._id,
+        candidateName: candidate.candidateName,
+        party: candidate.party,
+        description: candidate.description,
+        profileImage: candidate.profileImage,
+        voteCount: candidate.voteCount,
+        isVotedBy: candidate._id.toString() === votedCandidateId, // Indicate if user voted for this candidate
+      })),
+    };
+  });
+
+  // 3. Consistent response
+  res.status(200).json({
+    success: true,
+    count: votedElections.length,
+    data: votedElections,
+  });
+});
+
+/**
+ * Get single voted election with full details
+ * @route GET /api/user/voted-elections/:electionId
+ * @access Private
+ * @returns {Object} Election details with voting information
+ */
+export const getUserVotedElectionDetails = asyncHandler(
+  async (req, res, next) => {
+    const userId = req.user._id || req.user.id;
+    const { electionId } = req.params;
+
+    // 1. Find the vote record for this election by current user
+    const vote = await Vote.findOne({ user: userId, election: electionId })
+      .populate({
+        path: "election",
+        select:
+          "title description isActive startDate endDate totalVotes createdAt candidates",
+        populate: {
+          path: "candidates",
+          model: "CandidateProfile",
+          select: "candidateName party description profileImage voteCount",
+        },
+      })
+      .lean();
+
+    if (!vote) {
+      return next(new ErrorHandler("You have not voted in this election", 404));
+    }
+
+    // 2. Decrypt candidate information
+    let votedCandidateId = null;
+    try {
+      votedCandidateId = decrypt(vote.encryptedCandidate);
+    } catch (error) {
+      console.error("Error decrypting candidate:", error.message);
+      votedCandidateId = null;
+    }
+
+    // 3. Find the voted candidate details
+    const votedCandidate = vote.election.candidates.find(
+      (c) => c._id.toString() === votedCandidateId,
+    );
+
+    // 4. Build response
+    const response = {
+      electionId: vote.election._id,
+      electionTitle: vote.election.title,
+      electionDescription: vote.election.description,
+      isActive: vote.election.isActive,
+      startDate: vote.election.startDate,
+      endDate: vote.election.endDate,
+      totalVotes: vote.election.totalVotes,
+      electionCreatedAt: vote.election.createdAt,
+      votedAt: vote.votedAt,
+      receiptCode: vote.receiptCode,
+      yourVote: votedCandidate
+        ? {
+            candidateId: votedCandidate._id,
+            candidateName: votedCandidate.candidateName,
+            party: votedCandidate.party,
+            description: votedCandidate.description,
+            profileImage: votedCandidate.profileImage,
+            voteCount: votedCandidate.voteCount,
+          }
+        : null,
+      allCandidates: vote.election.candidates.map((candidate) => ({
+        candidateId: candidate._id,
+        candidateName: candidate.candidateName,
+        party: candidate.party,
+        description: candidate.description,
+        profileImage: candidate.profileImage,
+        voteCount: candidate.voteCount,
+        isYourVote: candidate._id.toString() === votedCandidateId,
+      })),
+    };
+
+    // 5. Consistent response
+    res.status(200).json({
+      success: true,
+      data: response,
+    });
+  },
+);

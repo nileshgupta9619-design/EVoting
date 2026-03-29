@@ -31,7 +31,12 @@ export const submitCandidateProfile = asyncHandler(async (req, res, next) => {
 
   // 1. Validate user approval status
   if (!req.user.isApproved) {
-    return next(new ErrorHandler("Your account must be approved by admin to become a candidate", 403));
+    return next(
+      new ErrorHandler(
+        "Your account must be approved by admin to become a candidate",
+        403,
+      ),
+    );
   }
 
   // 2. Validate required fields
@@ -42,7 +47,9 @@ export const submitCandidateProfile = asyncHandler(async (req, res, next) => {
     return next(new ErrorHandler("Political party name is required", 400));
   }
   if (!description || description.length < 10) {
-    return next(new ErrorHandler("Description must be at least 10 characters", 400));
+    return next(
+      new ErrorHandler("Description must be at least 10 characters", 400),
+    );
   }
   if (!electionId) {
     return next(new ErrorHandler("Election ID is required", 400));
@@ -63,13 +70,20 @@ export const submitCandidateProfile = asyncHandler(async (req, res, next) => {
     election: electionId,
   });
   if (existingProfile) {
-    return next(new ErrorHandler("You already have a profile for this election", 409));
+    return next(
+      new ErrorHandler("You already have a profile for this election", 409),
+    );
   }
 
   // 5. Check if voter ID is already registered
   const existingVoterId = await CandidateProfile.findOne({ voterId });
   if (existingVoterId) {
-    return next(new ErrorHandler("This voter ID is already registered as a candidate", 409));
+    return next(
+      new ErrorHandler(
+        "This voter ID is already registered as a candidate",
+        409,
+      ),
+    );
   }
 
   // 6. Create candidate profile
@@ -88,9 +102,13 @@ export const submitCandidateProfile = asyncHandler(async (req, res, next) => {
 
   await candidateProfile.save();
 
+  // ✅ NEW: Add candidate to election
+  await Election.findByIdAndUpdate(electionId, {
+    $addToSet: { candidates: candidateProfile._id }, // avoids duplicates
+  });
   // 7. Log action
   await AuditLog.create({
-    userId,
+    adminId:userId,
     action: "candidate_profile_submitted",
     targetType: "CandidateProfile",
     targetId: candidateProfile._id,
@@ -100,11 +118,11 @@ export const submitCandidateProfile = asyncHandler(async (req, res, next) => {
       election: election._id,
     },
   });
-
   // 8. Consistent response
   res.status(201).json({
     success: true,
-    message: "Candidate profile submitted successfully. Awaiting admin approval.",
+    message:
+      "Candidate profile submitted successfully. Awaiting admin approval.",
     data: {
       profileId: candidateProfile._id,
       candidateName: candidateProfile.candidateName,
@@ -191,10 +209,11 @@ export const getApprovedProfiles = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * Get current user's candidate profile
+ * Get current user's candidate profile(s)
  * @route GET /api/candidate-profiles/my-profile
  * @access Private
- * @param {string} electionId - Optional election filter
+ * @param {string} electionId - Optional: return profile for specific election only
+ *                             If omitted, returns ALL candidate profiles for the user
  */
 export const getUserCandidateProfile = asyncHandler(async (req, res, next) => {
   const userId = req.user._id || req.user.id;
@@ -206,34 +225,68 @@ export const getUserCandidateProfile = asyncHandler(async (req, res, next) => {
     query.election = electionId;
   }
 
-  // 2. Fetch profile
-  const profile = await CandidateProfile.findOne(query).populate(
-    "election",
-    "title startDate endDate"
-  );
+  // 2. Fetch profiles
+  if (electionId) {
+    // If electionId specified, return single profile
+    const profile = await CandidateProfile.findOne(query).populate(
+      "election",
+      "title startDate endDate",
+    );
 
-  if (!profile) {
-    return next(new ErrorHandler("No candidate profile found", 404));
+    if (!profile) {
+      return next(
+        new ErrorHandler("No candidate profile found for this election", 404),
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        profileId: profile._id,
+        candidateName: profile.candidateName,
+        party: profile.party,
+        description: profile.description,
+        profileImage: profile.profileImage,
+        status: profile.status,
+        voteCount: profile.voteCount,
+        election: profile.election,
+        voterId: profile.voterId,
+        createdAt: profile.createdAt,
+        approvalDate: profile.approvalDate,
+        rejectionReason: profile.rejectionReason || null,
+      },
+    });
+  } else {
+    // If no electionId, return all profiles for the user
+    const profiles = await CandidateProfile.find(query)
+      .populate("election", "title startDate endDate")
+      .sort({ createdAt: -1 });
+
+    if (!profiles || profiles.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: profiles.map((profile) => ({
+        profileId: profile._id,
+        candidateName: profile.candidateName,
+        party: profile.party,
+        description: profile.description,
+        profileImage: profile.profileImage,
+        status: profile.status,
+        voteCount: profile.voteCount,
+        election: profile.election,
+        voterId: profile.voterId,
+        createdAt: profile.createdAt,
+        approvalDate: profile.approvalDate,
+        rejectionReason: profile.rejectionReason || null,
+      })),
+    });
   }
-
-  // 3. Consistent response
-  res.status(200).json({
-    success: true,
-    data: {
-      profileId: profile._id,
-      candidateName: profile.candidateName,
-      party: profile.party,
-      description: profile.description,
-      profileImage: profile.profileImage,
-      status: profile.status,
-      voteCount: profile.voteCount,
-      election: profile.election,
-      voterId: profile.voterId,
-      createdAt: profile.createdAt,
-      approvalDate: profile.approvalDate,
-      rejectionReason: profile.rejectionReason || null,
-    },
-  });
 });
 
 /**
@@ -267,7 +320,7 @@ export const approveCandidateProfile = asyncHandler(async (req, res, next) => {
 
   // 4. Log action
   await AuditLog.create({
-    userId: adminId,
+    adminId: adminId,
     action: "candidate_profile_approved",
     targetType: "CandidateProfile",
     targetId: profile._id,
@@ -330,7 +383,7 @@ export const rejectCandidateProfile = asyncHandler(async (req, res, next) => {
 
   // 5. Log action
   await AuditLog.create({
-    userId: adminId,
+    adminId: adminId,
     action: "candidate_profile_rejected",
     targetType: "CandidateProfile",
     targetId: profile._id,
@@ -380,15 +433,17 @@ export const updateCandidateProfile = asyncHandler(async (req, res, next) => {
     return next(
       new ErrorHandler(
         `Cannot update ${profile.status} profiles. Only pending profiles can be updated.`,
-        400
-      )
+        400,
+      ),
     );
   }
 
   // 4. Validate and update fields
   if (candidateName) {
     if (candidateName.length < 3) {
-      return next(new ErrorHandler("Candidate name must be at least 3 characters", 400));
+      return next(
+        new ErrorHandler("Candidate name must be at least 3 characters", 400),
+      );
     }
     profile.candidateName = candidateName;
   }
@@ -399,7 +454,9 @@ export const updateCandidateProfile = asyncHandler(async (req, res, next) => {
 
   if (description) {
     if (description.length < 10) {
-      return next(new ErrorHandler("Description must be at least 10 characters", 400));
+      return next(
+        new ErrorHandler("Description must be at least 10 characters", 400),
+      );
     }
     profile.description = description;
   }
@@ -412,7 +469,7 @@ export const updateCandidateProfile = asyncHandler(async (req, res, next) => {
 
   // 5. Log action
   await AuditLog.create({
-    userId,
+    adminId:userId,
     action: "candidate_profile_updated",
     targetType: "CandidateProfile",
     targetId: profile._id,

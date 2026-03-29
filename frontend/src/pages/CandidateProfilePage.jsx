@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { candidateProfileAPI } from '../utils/api';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { candidateProfileAPI, electionAPI } from '../utils/api';
 import MainLayout from '../components/MainLayout';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -8,40 +8,66 @@ import Input from '../components/Input';
 import Loading from '../components/Loading';
 import Alert from '../components/Alert';
 
-export default function CandidateProfile() {
+export default function CandidateProfilePage() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const preSelectedElectionId = searchParams.get('electionId');
+
     const [formData, setFormData] = useState({
-        partyName: '',
-        bio: '',
-        platform: '',
-        qualifications: '',
-        experience: '',
+        candidateName: '',
+        party: '',
+        description: '',
+        electionId: preSelectedElectionId || '',
+        voterId: '',
+        voterIdDocument: '',
+        profileImage: '',
     });
+    const [elections, setElections] = useState([]);
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [alert, setAlert] = useState(null);
     const [errors, setErrors] = useState({});
+    const [imagePreview, setImagePreview] = useState(null);
+    const [docPreview, setDocPreview] = useState(null);
 
     useEffect(() => {
-        fetchProfile();
+        fetchData();
     }, []);
 
-    const fetchProfile = async () => {
+    const fetchData = async () => {
         try {
-            const response = await candidateProfileAPI.myProfile();
-            const data = response.data.data;
-            setProfile(data);
-            setFormData({
-                partyName: data.partyName || '',
-                bio: data.bio || '',
-                platform: data.platform || '',
-                qualifications: data.qualifications || '',
-                experience: data.experience || '',
-            });
+            // Fetch existing profile if any
+            // try {
+            //     const response = await candidateProfileAPI.myProfile();
+            //     const data = response.data.data;
+            //     setProfile(data);
+            //     setFormData({
+            //         candidateName: data.candidateName || '',
+            //         party: data.party || '',
+            //         description: data.description || '',
+            //         electionId: data.election?._id || '',
+            //         voterId: data.voterId || '',
+            //         voterIdDocument: data.voterIdDocument || '',
+            //         profileImage: data.profileImage || '',
+            //     });
+            //     if (data.profileImage) {
+            //         setImagePreview(data.profileImage);
+            //     }
+            //     if (data.voterIdDocument) {
+            //         setDocPreview(data.voterIdDocument);
+            //     }
+            // } catch (error) {
+            //     console.log('No existing profile yet');
+            // }
+
+            // Fetch available elections
+            const electionsRes = await electionAPI.list();
+            console.log("electionsRes.data",electionsRes.data.data.filter((election)=> election.isActive))
+            // setElections(electionsRes.data.data || []);
+            setElections(electionsRes.data.data.filter((election)=> election.isActive) || []);
         } catch (error) {
-            // No profile yet - which is fine, user will create new one
-            console.log('No existing profile');
+            console.error('Failed to fetch data:', error);
         } finally {
             setLoading(false);
         }
@@ -49,10 +75,13 @@ export default function CandidateProfile() {
 
     const validateForm = () => {
         const newErrors = {};
-        if (!formData.partyName.trim()) newErrors.partyName = 'Party name is required';
-        if (!formData.bio.trim()) newErrors.bio = 'Bio is required';
-        if (formData.bio.length < 50) newErrors.bio = 'Bio must be at least 50 characters';
-        if (!formData.platform.trim()) newErrors.platform = 'Platform is required';
+        if (!formData.candidateName.trim()) newErrors.candidateName = 'Candidate name is required';
+        if (!formData.party.trim()) newErrors.party = 'Political party is required';
+        if (!formData.description.trim()) newErrors.description = 'Description is required';
+        if (formData.description.length < 10) newErrors.description = 'Description must be at least 10 characters';
+        if (!formData.electionId) newErrors.electionId = 'Please select an election';
+        if (!formData.voterId.trim()) newErrors.voterId = 'Voter ID is required';
+        if (!formData.voterIdDocument && !profile) newErrors.voterIdDocument = 'Voter ID document is required';
         return newErrors;
     };
 
@@ -61,6 +90,22 @@ export default function CandidateProfile() {
         setFormData((prev) => ({ ...prev, [name]: value }));
         if (errors[name]) {
             setErrors((prev) => ({ ...prev, [name]: '' }));
+        }
+    };
+
+    const handleImageChange = (e, field) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFormData((prev) => ({ ...prev, [field]: reader.result }));
+                if (field === 'profileImage') {
+                    setImagePreview(reader.result);
+                } else if (field === 'voterIdDocument') {
+                    setDocPreview(reader.result);
+                }
+            };
+            reader.readAsDataURL(file);
         }
     };
 
@@ -76,23 +121,37 @@ export default function CandidateProfile() {
         setSubmitting(true);
         try {
             if (profile) {
-                await candidateProfileAPI.update(profile._id, formData);
+                // Update existing profile
+                const updateData = {
+                    candidateName: formData.candidateName,
+                    party: formData.party,
+                    description: formData.description,
+                    voterId: formData.voterId,
+                };
+                if (formData.profileImage && formData.profileImage.startsWith('data:')) {
+                    updateData.profileImage = formData.profileImage;
+                }
+                if (formData.voterIdDocument && formData.voterIdDocument.startsWith('data:')) {
+                    updateData.voterIdDocument = formData.voterIdDocument;
+                }
+                await candidateProfileAPI.update(profile._id, updateData);
                 setAlert({
                     type: 'success',
                     title: 'Profile Updated',
                     message: 'Your candidate profile has been updated successfully',
                 });
             } else {
+                // Create new profile
                 await candidateProfileAPI.submit(formData);
                 setAlert({
                     type: 'success',
-                    title: 'Profile Created',
-                    message: 'Your candidate profile has been submitted successfully',
+                    title: 'Profile Submitted',
+                    message: 'Your candidate profile has been submitted for admin review',
                 });
             }
             setTimeout(() => {
                 navigate('/candidate/dashboard');
-            }, 1500);
+            }, 2000);
         } catch (error) {
             setAlert({
                 type: 'error',
@@ -110,12 +169,7 @@ export default function CandidateProfile() {
         <MainLayout>
             <div className="max-w-3xl mx-auto space-y-6">
                 {/* Header */}
-                <Card className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-                    <h1 className="text-3xl font-bold mb-2">
-                        {profile ? 'Edit Your Profile' : 'Create Your Candidate Profile'}
-                    </h1>
-                    <p className="text-indigo-100">Complete your information to participate in elections</p>
-                </Card>
+             
 
                 {/* Alert */}
                 {alert && (
@@ -130,10 +184,10 @@ export default function CandidateProfile() {
                 {/* Status Badge */}
                 {profile && (
                     <Card className={`border-l-4 ${profile.status === 'approved'
-                            ? 'border-green-500 bg-green-50'
-                            : profile.status === 'rejected'
-                                ? 'border-red-500 bg-red-50'
-                                : 'border-yellow-500 bg-yellow-50'
+                        ? 'border-green-500 bg-green-50'
+                        : profile.status === 'rejected'
+                            ? 'border-red-500 bg-red-50'
+                            : 'border-yellow-500 bg-yellow-50'
                         }`}>
                         <div className="flex items-center justify-between">
                             <div>
@@ -142,83 +196,156 @@ export default function CandidateProfile() {
                                         ? '✅ Your profile is approved'
                                         : profile.status === 'rejected'
                                             ? '❌ Your profile was rejected'
-                                            : '⏳ Your profile is pending review'}
+                                            : '⏳Create Your Candidate profile'}
                                 </h3>
                                 {profile.rejectionReason && (
-                                    <p className="text-sm mt-2">{profile.rejectionReason}</p>
+                                    <p className="text-sm mt-2 font-medium">Reason: {profile.rejectionReason}</p>
                                 )}
                             </div>
                         </div>
                     </Card>
                 )}
+                <Card className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+                    {/* <h1 className="text-3xl font-bold mb-2">
+                        {profile ? 'Edit Candidate Profile' : 'Create Candidate Profile'}
+                    </h1> */}
+                    <p className="text-indigo-100">
+                        {profile
+                            ? 'Update your information to participate in elections'
+                            : 'Fill in your details to become a candidate in elections'}
+                    </p>
+                </Card>
 
                 {/* Form */}
                 <Card>
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Party Name */}
+                        {/* Candidate Name */}
                         <Input
-                            label="Party Name / Independent Name"
-                            name="partyName"
-                            placeholder="Enter your party name or 'Independent'"
-                            value={formData.partyName}
+                            label="Full Name"
+                            name="candidateName"
+                            placeholder="Enter your full name"
+                            value={formData.candidateName}
                             onChange={handleChange}
-                            error={errors.partyName}
+                            error={errors.candidateName}
+                            required
                         />
 
-                        {/* Bio */}
+                        {/* Political Party */}
+                        <Input
+                            label="Political Party / Organization"
+                            name="party"
+                            placeholder="Enter party name or 'Independent'"
+                            value={formData.party}
+                            onChange={handleChange}
+                            error={errors.party}
+                            required
+                        />
+
+                        {/* Description */}
                         <div>
                             <label className="block text-gray-700 font-medium text-sm mb-2">
-                                Bio (Brief Introduction)
+                                Bio / Description *
                             </label>
                             <textarea
-                                name="bio"
-                                placeholder="Write a brief introduction about yourself (minimum 50 characters)"
-                                value={formData.bio}
+                                name="description"
+                                placeholder="Write about yourself, background, and vision (minimum 10 characters)"
+                                value={formData.description}
                                 onChange={handleChange}
                                 rows="5"
-                                className={`w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 ${errors.bio ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''
+                                className={`w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all duration-200 font-sans ${errors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''
                                     }`}
                             />
                             <p className="text-sm text-gray-500 mt-1">
-                                {formData.bio.length}/500 characters
+                                {formData.description.length} characters
                             </p>
-                            {errors.bio && <p className="text-red-600 text-sm mt-1">⚠ {errors.bio}</p>}
+                            {errors.description && <p className="text-red-600 text-sm mt-1">⚠️ {errors.description}</p>}
                         </div>
 
-                        {/* Platform */}
+                        {/* Election Selection */}
                         <div>
                             <label className="block text-gray-700 font-medium text-sm mb-2">
-                                Platform / Vision
+                                Select Election *
                             </label>
-                            <textarea
-                                name="platform"
-                                placeholder="What are your key policies and vision?"
-                                value={formData.platform}
+                            <select
+                                name="electionId"
+                                value={formData.electionId}
                                 onChange={handleChange}
-                                rows="4"
-                                className={`w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 ${errors.platform ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''
+                                className={`w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all duration-200 ${errors.electionId ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''
                                     }`}
-                            />
-                            {errors.platform && <p className="text-red-600 text-sm mt-1">⚠ {errors.platform}</p>}
+                                // disabled={profile} // Can't change election after creation
+                            >
+                                <option value="">-- Select an election --</option>
+                                {elections.map((election) => (
+                                    <option key={election._id} value={election._id}>
+                                        {election.title}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.electionId && <p className="text-red-600 text-sm mt-1">⚠️ {errors.electionId}</p>}
                         </div>
 
-                        {/* Qualifications */}
+                        {/* Voter ID */}
                         <Input
-                            label="Qualifications (Optional)"
-                            name="qualifications"
-                            placeholder="List your qualifications and credentials"
-                            value={formData.qualifications}
+                            label="Government Voter ID Number *"
+                            name="voterId"
+                            placeholder="Enter your voter ID number"
+                            value={formData.voterId}
                             onChange={handleChange}
+                            error={errors.voterId}
+                            required
                         />
 
-                        {/* Experience */}
-                        <Input
-                            label="Experience (Optional)"
-                            name="experience"
-                            placeholder="Describe your relevant experience"
-                            value={formData.experience}
-                            onChange={handleChange}
-                        />
+                        {/* Voter ID Document */}
+                        <div>
+                            <label className="block text-gray-700 font-medium text-sm mb-2">
+                                Voter ID Document Image {!profile && '*'}
+                            </label>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                    handleImageChange(e, 'voterIdDocument');
+                                    if (errors.voterIdDocument) {
+                                        setErrors((prev) => ({ ...prev, voterIdDocument: '' }));
+                                    }
+                                }}
+                                className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-indigo-500 focus:outline-none"
+                            />
+                            {docPreview && (
+                                <div className="mt-3">
+                                    <img
+                                        src={docPreview}
+                                        alt="Voter Doc Preview"
+                                        className="w-32 h-32 rounded-lg object-cover border-2 border-gray-300"
+                                    />
+                                </div>
+                            )}
+                            {errors.voterIdDocument && (
+                                <p className="text-red-600 text-sm mt-1">⚠️ {errors.voterIdDocument}</p>
+                            )}
+                        </div>
+
+                        {/* Profile Image */}
+                        <div>
+                            <label className="block text-gray-700 font-medium text-sm mb-2">
+                                Profile Picture (Optional)
+                            </label>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleImageChange(e, 'profileImage')}
+                                className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-indigo-500 focus:outline-none"
+                            />
+                            {imagePreview && (
+                                <div className="mt-3">
+                                    <img
+                                        src={imagePreview}
+                                        alt="Profile Preview"
+                                        className="w-32 h-32 rounded-lg object-cover border-2 border-gray-300"
+                                    />
+                                </div>
+                            )}
+                        </div>
 
                         {/* Form Actions */}
                         <div className="flex gap-4 pt-6 border-t">
@@ -228,7 +355,7 @@ export default function CandidateProfile() {
                                 disabled={submitting}
                                 className="flex-1 text-lg py-3"
                             >
-                                {profile ? 'Update Profile' : 'Submit Profile'}
+                                {profile ? '✏️ Update Profile' : '📝 Submit Profile'}
                             </Button>
                             <Button
                                 type="button"
@@ -244,12 +371,13 @@ export default function CandidateProfile() {
 
                 {/* Info Box */}
                 <Card className="bg-blue-50 border-l-4 border-blue-500">
-                    <h4 className="font-bold text-blue-900 mb-2">ℹ️ Important Notes</h4>
+                    <h4 className="font-bold text-blue-900 mb-2">ℹ️ Important Information</h4>
                     <ul className="text-sm text-blue-800 space-y-1">
-                        <li>✓ Complete all required fields to submit your profile</li>
+                        <li>✓ Your account must be approved by admins before you can submit a profile</li>
+                        <li>✓ Complete all required (*) fields to submit your profile</li>
                         <li>✓ Your profile will be reviewed by administrators</li>
                         <li>✓ You'll be notified when your profile is approved or rejected</li>
-                        <li>✓ You can edit your profile anytime before approval</li>
+                        <li>✓ You can edit your profile before admin approval</li>
                     </ul>
                 </Card>
             </div>

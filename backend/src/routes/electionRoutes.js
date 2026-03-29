@@ -9,6 +9,7 @@ import {
   updateElection,
   deleteElection,
   getElectionResults,
+  getAllElectionsResults,
 } from "../controllers/electionController.js";
 import { protect, authorize } from "../middleware/auth.js";
 
@@ -21,11 +22,14 @@ router.get("/:electionId/candidates", protect, getElectionCandidates);
 // Results are available to anyone only after election stopped
 router.get("/:electionId/results", getElectionResults);
 
+// Get all elections with their results (public)
+router.get("/results/all", getAllElectionsResults);
+
 // Admin routes
 router.post("/", protect, authorize("admin"), createElection);
-router.put("/:electionId", protect, authorize("admin"), updateElection);
+router.patch("/:electionId", protect, authorize("admin"), updateElection);
 router.delete("/:electionId", protect, authorize("admin"), deleteElection);
-router.put("/:electionId/start", protect, authorize("admin"), startVoting);
-router.put("/:electionId/stop", protect, authorize("admin"), stopVoting);
+router.patch("/:electionId/start", protect, authorize("admin"), startVoting);
+router.patch("/:electionId/stop", protect, authorize("admin"), stopVoting);
 
 export default router;

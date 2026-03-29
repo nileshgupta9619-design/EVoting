@@ -32,7 +32,7 @@ export const createElection = asyncHandler(async (req, res, next) => {
     endDate: endDate ? new Date(endDate) : null,
     createdBy: adminId,
   });
-  
+
   await AuditLog.create({
     adminId: adminId,
     action: "create_election",
@@ -59,10 +59,9 @@ export const getAllElections = asyncHandler(async (req, res, next) => {
   }
 
   const now = new Date();
-  const elections = await Election.find({}).populate(
-    "createdBy",
-    "fullName email",
-  ).sort({ createdAt: -1 });
+  const elections = await Election.find({})
+    .populate("createdBy", "fullName email")
+    .sort({ createdAt: -1 });
   // const elections = await Election.find({
   //   isActive: true,
   //   $or: [
@@ -136,7 +135,7 @@ export const startVoting = asyncHandler(async (req, res, next) => {
   }
 
   await AuditLog.create({
-    userId: req.user._id,
+    adminId: req.user._id,
     action: "start_election",
     targetType: "Election",
     targetId: election._id,
@@ -172,7 +171,7 @@ export const stopVoting = asyncHandler(async (req, res, next) => {
   }
 
   await AuditLog.create({
-    userId: req.user._id,
+    adminId: req.user._id,
     action: "stop_election",
     targetType: "Election",
     targetId: election._id,
@@ -247,7 +246,7 @@ export const updateElection = asyncHandler(async (req, res, next) => {
   await election.save();
 
   await AuditLog.create({
-    userId: req.user._id,
+    adminId: req.user._id,
     action: "update_election",
     targetType: "Election",
     targetId: election._id,
@@ -279,7 +278,7 @@ export const deleteElection = asyncHandler(async (req, res, next) => {
   await CandidateProfile.deleteMany({ election: electionId });
 
   await AuditLog.create({
-    userId: req.user._id,
+    adminId: req.user._id,
     action: "delete_election",
     targetType: "Election",
     targetId: electionId,
@@ -342,4 +341,79 @@ export const getElectionResults = asyncHandler(async (req, res, next) => {
       results,
     },
   });
+});
+
+/**
+ * Get all elections with their results
+ * @route GET /api/elections/results/all
+ * @access Public
+ */
+export const getAllElectionsResults = asyncHandler(async (req, res, next) => {
+  try {
+    // Get all elections
+    const elections = await Election.find({})
+      .populate("createdBy", "fullName email")
+      .sort({ createdAt: -1 });
+
+    if (!elections || elections.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No elections found",
+        count: 0,
+        data: [],
+      });
+    }
+
+    // For each election, get results
+    const allElectionsResults = await Promise.all(
+      elections.map(async (election) => {
+        const candidates = await CandidateProfile.find({
+          election: election._id,
+          status: "approved",
+        }).sort({ voteCount: -1 });
+
+        const totalVotes = candidates.reduce(
+          (acc, cand) => acc + (cand.voteCount || 0),
+          0,
+        );
+
+        const results = candidates.map((candidate) => ({
+          id: candidate._id,
+          name: candidate.candidateName,
+          party: candidate.party,
+          voteCount: candidate.voteCount || 0,
+          percentage:
+            totalVotes > 0
+              ? ((candidate.voteCount / totalVotes) * 100).toFixed(2)
+              : "0",
+          description: candidate.description || "",
+          profileImage: candidate.profileImage || null,
+        }));
+
+        return {
+          election: {
+            id: election._id,
+            title: election.title,
+            description: election.description,
+            isActive: election.isActive,
+            status: election.isActive ? "Live Results" : "Final Results",
+            startDate: election.startDate,
+            endDate: election.endDate,
+            createdBy: election.createdBy?.fullName || "System",
+          },
+          totalVotes,
+          candidateCount: results.length,
+          results,
+        };
+      }),
+    );
+
+    res.status(200).json({
+      success: true,
+      count: allElectionsResults.length,
+      data: allElectionsResults,
+    });
+  } catch (error) {
+    next(error);
+  }
 });

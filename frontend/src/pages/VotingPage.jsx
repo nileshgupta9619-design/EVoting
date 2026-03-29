@@ -6,6 +6,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
 import Alert from '../components/Alert';
+import CandidateDetailsModal from '../components/CandidateDetailsModal';
 
 export default function VotingPage() {
     const { electionId } = useParams();
@@ -13,10 +14,12 @@ export default function VotingPage() {
     const [election, setElection] = useState(null);
     const [candidates, setCandidates] = useState([]);
     const [selectedCandidate, setSelectedCandidate] = useState(null);
+    const [selectedCandidateForModal, setSelectedCandidateForModal] = useState(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [alert, setAlert] = useState(null);
     const [hasVoted, setHasVoted] = useState(false);
+    const [voteReceipt, setVoteReceipt] = useState(null);
 
     useEffect(() => {
         fetchData();
@@ -62,15 +65,20 @@ export default function VotingPage() {
 
         setSubmitting(true);
         try {
-            await votingAPI.voteInElection(electionId, selectedCandidate);
+            const response = await votingAPI.voteInElection(electionId, selectedCandidate);
+
+            // Show receipt before redirecting
+            setVoteReceipt({
+                receiptCode: response.data.data?.receiptCode,
+                candidateName: candidates.find(c => c._id === selectedCandidate)?.candidateName || 'Unknown',
+                election: election?.title,
+            });
+
             setAlert({
                 type: 'success',
                 title: 'Vote Submitted',
                 message: 'Your vote has been successfully recorded',
             });
-            setTimeout(() => {
-                navigate('/dashboard');
-            }, 2000);
         } catch (error) {
             setAlert({
                 type: 'error',
@@ -93,6 +101,74 @@ export default function VotingPage() {
                     <p className="text-gray-600 mb-6">Thank you for participating in this election</p>
                     <Button onClick={() => navigate('/dashboard')}>Back to Dashboard</Button>
                 </Card>
+            </MainLayout>
+        );
+    }
+
+    // Show receipt modal after voting
+    if (voteReceipt) {
+        return (
+            <MainLayout>
+                <div className="max-w-2xl mx-auto space-y-6">
+                    {/* Receipt Card */}
+                    <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-500">
+                        <div className="text-center space-y-6">
+                            {/* Success Icon */}
+                            <div className="text-6xl">✅</div>
+
+                            {/* Success Message */}
+                            <div>
+                                <h1 className="text-4xl font-bold text-green-800 mb-2">Vote Recorded!</h1>
+                                <p className="text-green-700">Your vote has been securely recorded and encrypted.</p>
+                            </div>
+
+                            {/* Receipt Details */}
+                            <div className="bg-white rounded-lg p-6 border-2 border-green-200 text-left space-y-4">
+                                <div>
+                                    <p className="text-gray-600 text-sm font-medium">Receipt Code (save for verification)</p>
+                                    <p className="text-2xl font-mono font-bold text-green-700 mt-1 break-all">{voteReceipt.receiptCode}</p>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(voteReceipt.receiptCode);
+                                            alert('Receipt code copied!');
+                                        }}
+                                        className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                                    >
+                                        📋 Copy Receipt Code
+                                    </button>
+                                </div>
+
+                                <div className="border-t border-gray-200 pt-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-gray-600 text-sm">Election</p>
+                                            <p className="font-semibold text-gray-800">{voteReceipt.election}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-600 text-sm">Time</p>
+                                            <p className="font-semibold text-gray-800">{new Date().toLocaleTimeString()}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Info Box */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p className="text-sm text-blue-800">
+                                    <strong>💡 Save your receipt code</strong> - You can use it later to verify your vote was counted correctly.
+                                </p>
+                            </div>
+
+                            {/* Next Button */}
+                            <Button
+                                onClick={() => navigate('/dashboard')}
+                                className="w-full text-lg py-3 mt-6"
+                            >
+                                Continue to Dashboard
+                            </Button>
+                        </div>
+                    </Card>
+                </div>
             </MainLayout>
         );
     }
@@ -126,6 +202,7 @@ export default function VotingPage() {
                                 candidate={candidate}
                                 isSelected={selectedCandidate === candidate._id}
                                 onSelect={() => setSelectedCandidate(candidate._id)}
+                                onViewDetails={() => setSelectedCandidateForModal(candidate)}
                             />
                         ))}
                     </div>
@@ -158,36 +235,86 @@ export default function VotingPage() {
                     </div>
                 )}
             </div>
+
+            {/* Candidate Details Modal */}
+            <CandidateDetailsModal
+                isOpen={!!selectedCandidateForModal}
+                onClose={() => setSelectedCandidateForModal(null)}
+                candidate={selectedCandidateForModal}
+                onVote={handleVote}
+            />
         </MainLayout>
     );
 }
 
-function CandidateOption({ candidate, isSelected, onSelect }) {
+function CandidateOption({ candidate, isSelected, onSelect, onViewDetails }) {
     return (
-        <button
-            onClick={onSelect}
-            className={`p-4 rounded-lg border-2 transition-all duration-200 text-left ${isSelected
-                    ? 'border-blue-600 bg-blue-50 shadow-lg'
-                    : 'border-gray-300 hover:border-blue-400 bg-white hover:shadow-md'
+        <div
+            className={`p-4 rounded-lg border-2 transition-all duration-200 ${isSelected
+                ? 'border-blue-600 bg-blue-50 shadow-lg'
+                : 'border-gray-300 hover:border-blue-400 bg-white hover:shadow-md'
                 }`}
         >
-            <div className="flex items-start">
-                <div className="mr-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
-                        {candidate.partyName?.charAt(0).toUpperCase() || 'I'}
-                    </div>
-                </div>
-                <div className="flex-1">
-                    <h3 className="font-bold text-gray-800">{candidate.partyName || 'Independent'}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{candidate.bio?.substring(0, 100)}...</p>
-                    {candidate.platform && (
-                        <p className="text-sm text-blue-600 font-medium mt-2">Platform: {candidate.platform}</p>
+            <div className="flex items-start gap-3">
+                {/* Avatar */}
+                <div className="flex-shrink-0">
+                    {candidate.profileImage ? (
+                        <img
+                            src={candidate.profileImage}
+                            alt={candidate.candidateName}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-gray-300"
+                        />
+                    ) : (
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold">
+                            {(candidate.candidateName || candidate.partyName)?.charAt(0).toUpperCase() || 'I'}
+                        </div>
                     )}
                 </div>
+
+                {/* Candidate Info */}
+                <div className="flex-1">
+                    <h3 className="font-bold text-gray-800">
+                        {candidate.candidateName || candidate.partyName}
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                        🏛️ {candidate.party || candidate.partyName}
+                    </p>
+                    {candidate.description && (
+                        <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                            {candidate.description}
+                        </p>
+                    )}
+                    <div className="flex items-center gap-3 mt-2">
+                        <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full">
+                            📊 {candidate.voteCount || 0} votes
+                        </span>
+                    </div>
+                </div>
+
+                {/* Selection Indicator */}
                 {isSelected && (
-                    <div className="ml-2 text-2xl">✓</div>
+                    <div className="text-2xl text-blue-600">✓</div>
                 )}
             </div>
-        </button>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
+                <button
+                    onClick={onViewDetails}
+                    className="flex-1 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 rounded transition"
+                >
+                    ℹ️ View Details
+                </button>
+                <button
+                    onClick={onSelect}
+                    className={`flex-1 px-3 py-2 text-sm rounded transition font-medium ${isSelected
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-blue-100 hover:bg-blue-200 text-blue-800'
+                        }`}
+                >
+                    {isSelected ? '✓ Selected' : 'Select'}
+                </button>
+            </div>
+        </div>
     );
 }

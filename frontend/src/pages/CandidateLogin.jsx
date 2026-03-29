@@ -212,7 +212,7 @@ export default function CandidateLogin() {
                         <p className="text-center text-sm text-gray-600">
                             New candidate?{' '}
                             <Link
-                                to="/register"
+                                to="/candidate/register"
                                 className="text-blue-600 hover:text-blue-700 font-semibold transition-colors"
                             >
                                 Register Here

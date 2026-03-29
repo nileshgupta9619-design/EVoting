@@ -3,6 +3,8 @@ import User from "../models/User.js";
 import { generateToken } from "../utils/helpers.js";
 import AuditLog from "../models/AuditLog.js";
 import Election from "../models/Election.js";
+import CandidateProfile from "../models/CandidateProfile.js";
+import Vote from "../models/Vote.js";
 
 // Approve voter (admin)
 export const approveVoter = async (req, res) => {
@@ -12,7 +14,7 @@ export const approveVoter = async (req, res) => {
 
     const user = await User.findByIdAndUpdate(
       userId,
-      { isApproved: true },
+      { isApproved: true,accountStatus:"approved" },
       { new: true },
     );
 
@@ -46,7 +48,7 @@ export const rejectVoter = async (req, res) => {
 
     const user = await User.findByIdAndUpdate(
       userId,
-      { isApproved: false },
+      { isApproved: false, accountStatus: "rejected" },
       { new: true },
     );
 
@@ -352,7 +354,6 @@ export const getElectionReports = async (req, res) => {
     const totalVotes = election.totalVotes || 0;
 
     // Get candidate votes
-    const CandidateProfile = require("../models/CandidateProfile.js").default;
     const candidateProfiles = await CandidateProfile.find({
       election: electionId,
       status: "approved",
@@ -547,8 +548,6 @@ export const getElectionActivityMonitoring = async (req, res) => {
       });
     }
 
-    // Get vote counts
-    const Vote = require("../models/Vote.js").default;
     const voteCount = await Vote.countDocuments({ election: electionId });
 
     // Get recent votes (last 10)
@@ -583,7 +582,6 @@ export const getElectionActivityMonitoring = async (req, res) => {
     ]);
 
     // Get candidate performance in real-time
-    const CandidateProfile = require("../models/CandidateProfile.js").default;
     const candidatePerformance = await CandidateProfile.find({
       election: electionId,
       status: "approved",

@@ -6,6 +6,8 @@ import {
   updateProfile,
   getUserProfile,
   deleteAccount,
+  getUserVotedElections,
+  getUserVotedElectionDetails,
 } from "../controllers/userController.js";
 import { protect } from "../middleware/auth.js";
 
@@ -16,6 +18,12 @@ router.post("/change-password", protect, changePassword);
 router.get("/profile", protect, getUserProfile);
 router.put("/profile", protect, updateProfile);
 router.delete("/account", protect, deleteAccount);
+router.get("/voted-elections/all", protect, getUserVotedElections);
+router.get(
+  "/voted-elections/:electionId",
+  protect,
+  getUserVotedElectionDetails,
+);
 
 // Public routes (no authentication needed)
 router.post("/forgot-password", forgotPassword);

@@ -22,17 +22,7 @@ router.get("/approved", getApprovedProfiles);
 
 // Admin routes
 router.get("/pending", protect, authorize("admin"), getPendingProfiles);
-router.put(
-  "/:profileId/approve",
-  protect,
-  authorize("admin"),
-  approveCandidateProfile,
-);
-router.put(
-  "/:profileId/reject",
-  protect,
-  authorize("admin"),
-  rejectCandidateProfile,
-);
+router.put("/:profileId/approve",protect,authorize("admin"),approveCandidateProfile,);
+router.put(  "/:profileId/reject",  protect,  authorize("admin"),  rejectCandidateProfile,);
 
 export default router;
