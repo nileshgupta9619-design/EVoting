@@ -35,7 +35,7 @@ export default function BecomeCandidateModal({ isOpen, onClose }) {
             });
             console.log(activeElections);
             
-            setElections(activeElections);
+            setElections(electionRes.data.data);
 
             // Check if user has existing profiles
             try {

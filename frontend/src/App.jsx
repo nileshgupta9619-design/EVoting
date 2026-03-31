@@ -42,6 +42,7 @@ import AdminLogs from './pages/AdminLogs';
 
 import './App.css';
 import VotePage from './pages/votePage';
+import AdminElectionCandidate from './pages/AdminElectionCandidate';
 
 function App() {
     return (
@@ -209,6 +210,16 @@ function App() {
                                 </AdminRoute>
                             }
                         />
+                        {/* /admin/election/${election._id}/candidates */}
+                        <Route
+                            path="/admin/elections/:electionId/candidates"
+                            element={
+                                <AdminRoute>
+                                    <AdminElectionCandidate />
+                                </AdminRoute>
+                            }
+                        />
+                        
                         <Route
                             path="/admin/registrations"
                             element={

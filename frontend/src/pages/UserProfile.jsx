@@ -154,10 +154,10 @@ const UserProfile = () => {
                                 <p className="font-semibold mb-3">
                                     {userData?.isEmailVerified ? <span className='text-green-400'>✓ Yes</span> : <span className='text-red-500'>✗ No</span>}
                                 </p>
-                                <p className="text-xs text-purple-300 mb-1">Voting Status</p>
+                                {/* <p className="text-xs text-purple-300 mb-1">Voting Status</p>
                                 <p className="font-semibold mb-3">
                                     {userData?.hasVoted ? '✓ Already Voted' : '✗ Not Voted Yet'}
-                                </p>
+                                </p> */}
                                 <p className="text-xs text-purple-300 mb-1">Account Status</p>
                                 <p className="font-semibold mb-3">{userData?.accountStatus || 'N/A'}</p> {/* Display account status */}
                                 <p className="text-xs text-purple-300 mb-1">Member Since</p>

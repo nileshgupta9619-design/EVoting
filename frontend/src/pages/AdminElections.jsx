@@ -303,7 +303,7 @@ export default function AdminElections() {
                                 onStop={() => handleStopElection(election._id)}
                                 onEdit={() => handleEditElection(election)}
                                 onDelete={() => handleDeleteElection(election._id)}
-                                onViewCandidates={() => navigate(`/admin/election/${election._id}/candidates`)}
+                                onViewCandidates={() => navigate(`/admin/elections/${election._id}/candidates`)}
                             />
                         ))}
                     </div>

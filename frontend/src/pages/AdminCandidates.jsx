@@ -158,6 +158,7 @@ export default function AdminCandidates() {
                                 ? 'bg-purple-600 text-white shadow-lg'
                                 : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
                                 }`}
+                                
                         >
                             {status.charAt(0).toUpperCase() + status.slice(1)}
                         </button>

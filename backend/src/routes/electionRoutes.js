@@ -27,9 +27,9 @@ router.get("/results/all", getAllElectionsResults);
 
 // Admin routes
 router.post("/", protect, authorize("admin"), createElection);
-router.patch("/:electionId", protect, authorize("admin"), updateElection);
+router.put("/:electionId", protect, authorize("admin"), updateElection);
 router.delete("/:electionId", protect, authorize("admin"), deleteElection);
-router.patch("/:electionId/start", protect, authorize("admin"), startVoting);
-router.patch("/:electionId/stop", protect, authorize("admin"), stopVoting);
+router.put("/:electionId/start", protect, authorize("admin"), startVoting);
+router.put("/:electionId/stop", protect, authorize("admin"), stopVoting);
 
 export default router;
